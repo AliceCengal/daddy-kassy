@@ -3,27 +3,110 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hello React!</title>
+    <title>Easy personal accounting</title>
+    <link rel="shortcut icon" href="favicon.ico">
+    <link id="w3-theme-color" rel="stylesheet" 
+      href="https://www.w3schools.com/lib/w3-theme-deep-purple.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" 
       integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <style> html, body, body>div { height: 100% } </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="text/babel">
+      /* style classes */
+      const spacerDiv = { "flexGrow": '1' };
+      const smallText = { "fontSize": 'small', "textAlign": 'right' };
+
+      function NavbarLink({page, label, goTo}) {
+        return <button 
+          disabled={page===label.toLowerCase()} 
+          className='btn btn-secondary'
+          onClick={()=>goTo(label.toLowerCase())}>{label}</button>
+      }
+
+      function Navbar({ page, setPage }) {
+        return (
+          <header className='d-flex flex-row w-100 w3-theme-l1 
+              justify-content-between align-items-center'>
+            <h1 className='m-3'>Daddy Cussy</h1>
+            <nav className='m-3 btn-group'>
+              <NavbarLink page={page} label='Spreadsheet' goTo={setPage} />
+              <NavbarLink page={page} label='New' goTo={setPage} />
+              <NavbarLink page={page} label='Load' goTo={setPage} />
+              <NavbarLink page={page} label='Download' goTo={setPage} />
+              <NavbarLink page={page} label='Help' goTo={setPage} />
+              <NavbarLink page={page} label='About' goTo={setPage} />
+            </nav>
+            <div style={smallText} className='m-3'>
+              site design and logo<br />
+              &copy; Athran Zuhail 2022 all rights reserved</div>
+          </header>)
+      }
       
+      function AboutPage(props) {
+        return (<main className='w-75 mx-auto '>
+          <h1 className='w3-text-theme'>About this app</h1>
+          
+        </main>)
+      }
+
+      function HelpPage(props) {
+        return (<main className='w-75 mx-auto'>
+          <h1 className='w3-text-theme'>Help for you</h1>
+          
+        </main>)
+      }
+
+      function LoadPage(props) {
+        return (<main className='w-75 mx-auto'>
+          <h1 className='w3-text-theme'>Load a previously saved spreadsheet</h1>
+          
+        </main>)
+      }
+
+      function DownloadPage(props) {
+        return (<main className='w-75 mx-auto'>
+          <h1 className='w3-text-theme'>Download the spreadsheet</h1>
+          
+        </main>)
+      }
+
+      function NewPage(props) {
+        return (<main className='w-75 mx-auto'>
+          <h1 className='w3-text-theme'>Create new spreadsheet</h1>
+          
+        </main>)
+      }
+
+      function SpreadsheetPage(props) {
+        return (<main className=''>
+          <h1 className='w3-text-theme'>You 2022</h1>
+          
+        </main>)
+      }
+
       function App(props) {
-        return <div>
-            <h1>Hello world</h1>
-            <button className='btn btn-primary' href='#'>Click</button>
+        const [currentPage, setPage] = React.useState('about');
+
+        return <div className='d-flex flex-column w3-theme-l5'>
+            <Navbar page={currentPage} setPage={setPage} />
+            {(currentPage === 'about'?        <AboutPage />       : null)}
+            {(currentPage === 'help'?         <HelpPage />        : null)}
+            {(currentPage === 'load'?         <LoadPage />        : null)}
+            {(currentPage === 'download'?     <DownloadPage />    : null)}
+            {(currentPage === 'new'?          <NewPage />         : null)}
+            {(currentPage === 'spreadsheet'?  <SpreadsheetPage /> : null)}
           </div>
       }
 
       ReactDOM.render( <App />, document.getElementById('root') );
     </script>
      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" 
-      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" 
+      crossorigin="anonymous"></script>
   </body>
 </html>
