@@ -11,99 +11,439 @@
       integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <style> html, body, body>div { height: 100% } </style>
+    <script src="https://unpkg.com/babel-standalone/babel.min.js"></script>
+    <style> 
+      html, body, body>div { height: 100% } 
+      main { overflow-y: auto }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root" class="d-flex flex-column w3-theme-l5"></div>
     <script type="text/babel">
-      /* style classes */
-      const spacerDiv = { "flexGrow": '1' };
-      const smallText = { "fontSize": 'small', "textAlign": 'right' };
+ReactDOM.render( <App />, document.getElementById('root') );
 
-      function NavbarLink({page, label, goTo}) {
-        return <button 
-          disabled={page===label.toLowerCase()} 
-          className='btn btn-secondary'
-          onClick={()=>goTo(label.toLowerCase())}>{label}</button>
-      }
+function App(props) {
+  const [currentPage, setPage] = React.useState('about');
+  
+  React.useEffect(()=>{
+    window.addEventListener("hashchange", function(e){ 
+      //console.log('hashchange', window.location.hash );
+      setPage(window.location.hash.slice(1));
+    });
+  }, []);
 
-      function Navbar({ page, setPage }) {
-        return (
-          <header className='d-flex flex-row w-100 w3-theme-l1 
-              justify-content-between align-items-center'>
-            <h1 className='m-3'>Daddy Cussy</h1>
-            <nav className='m-3 btn-group'>
-              <NavbarLink page={page} label='Spreadsheet' goTo={setPage} />
-              <NavbarLink page={page} label='New' goTo={setPage} />
-              <NavbarLink page={page} label='Load' goTo={setPage} />
-              <NavbarLink page={page} label='Download' goTo={setPage} />
-              <NavbarLink page={page} label='Help' goTo={setPage} />
-              <NavbarLink page={page} label='About' goTo={setPage} />
-            </nav>
-            <div style={smallText} className='m-3'>
-              site design and logo<br />
-              &copy; Athran Zuhail 2022 all rights reserved</div>
-          </header>)
-      }
-      
-      function AboutPage(props) {
-        return (<main className='w-75 mx-auto '>
-          <h1 className='w3-text-theme'>About this app</h1>
-          
-        </main>)
-      }
+  return <React.Fragment>
+      <Navbar />
+      {(currentPage === 'about'?        <AboutPage />       : null)}
+      {(currentPage === 'help'?         <HelpPage />        : null)}
+      {(currentPage === 'load'?         <LoadPage />        : null)}
+      {(currentPage === 'download'?     <DownloadPage />    : null)}
+      {(currentPage === 'new'?          <NewPage />         : null)}
+      {(currentPage === 'spreadsheet'?  <SpreadsheetPage /> : null)}
+    </React.Fragment>
+}
 
-      function HelpPage(props) {
-        return (<main className='w-75 mx-auto'>
-          <h1 className='w3-text-theme'>Help for you</h1>
-          
-        </main>)
-      }
+/* style classes */
+const spacerDiv = { "flexGrow": '1' };
+const textCode = { "fontFamily": 'monospace', "whiteSpace": 'pre' };
 
-      function LoadPage(props) {
-        return (<main className='w-75 mx-auto'>
-          <h1 className='w3-text-theme'>Load a previously saved spreadsheet</h1>
-          
-        </main>)
-      }
+/* tooltip style classes https://www.w3schools.com/css/css_tooltip.asp */
+const tooltip = { "position": 'relative', "display": 'inline-block' };
+const tooltipText = { ...tooltip, ...{ // object extension pattern
+  "visibility": 'hidden',
+  "width": '360px',
+  "textAlign": 'left',
+  "padding": '10px',
+  "borderRadius": '6px',
 
-      function DownloadPage(props) {
-        return (<main className='w-75 mx-auto'>
-          <h1 className='w3-text-theme'>Download the spreadsheet</h1>
-          
-        </main>)
-      }
+  /* Position the tooltip text - see examples below! */
+  "position": 'absolute',
+  "top": '-5px',
+  "left": '110%',
+  "zIndex": '1'
+}}
 
-      function NewPage(props) {
-        return (<main className='w-75 mx-auto'>
-          <h1 className='w3-text-theme'>Create new spreadsheet</h1>
-          
-        </main>)
-      }
+function Space(props) { return <div className='mb-3' /> }
 
-      function SpreadsheetPage(props) {
-        return (<main className=''>
-          <h1 className='w3-text-theme'>You 2022</h1>
-          
-        </main>)
-      }
+function NavbarLink({label}) {
+  const hash = window.location.hash.slice(1);
+  return <button 
+    disabled={hash===label.toLowerCase()} 
+    className='btn btn-secondary'
+    onClick={()=>window.location.hash=label.toLowerCase()}>
+    {label}
+  </button>
+}
 
-      function App(props) {
-        const [currentPage, setPage] = React.useState('about');
+function Navbar(props) {
+  return (
+    <header className='d-flex flex-row w-100 w3-theme-l1 
+        justify-content-between align-items-center p-3'>
+      <h1>Daddy Cussy</h1>
+      <nav className='btn-group border border-light border-3 rounded'>
+        <NavbarLink label='Spreadsheet' />
+        <NavbarLink label='New' />
+        <NavbarLink label='Load' />
+        <NavbarLink label='Download' />
+        <NavbarLink label='Help' />
+        <NavbarLink label='About' />
+      </nav>
+      <div style={{ "fontSize": 'small', "textAlign": 'right' }}>
+        site design and logo<br />
+        &copy; Athran Zuhail 2022 all rights reserved</div>
+    </header>)
+}
 
-        return <div className='d-flex flex-column w3-theme-l5'>
-            <Navbar page={currentPage} setPage={setPage} />
-            {(currentPage === 'about'?        <AboutPage />       : null)}
-            {(currentPage === 'help'?         <HelpPage />        : null)}
-            {(currentPage === 'load'?         <LoadPage />        : null)}
-            {(currentPage === 'download'?     <DownloadPage />    : null)}
-            {(currentPage === 'new'?          <NewPage />         : null)}
-            {(currentPage === 'spreadsheet'?  <SpreadsheetPage /> : null)}
-          </div>
-      }
+function AboutPage(props) {
+  return (<main className='w-50 mx-auto pt-4'>
+    <h1 className='w3-text-theme'>About this app</h1>
+    <p>This is an app for tracking and analyzing simple personal income, expense,
+      and investment. The target audience is an average working adult.</p>
+    <p>To start using this application, </p>
+    <ul>
+      <li>create a <a href="#new">New</a> spreadsheet, or </li>
+      <li><a href="#load">Load</a> a previously saved spreadsheet. </li>
+    </ul>
+    <p>Note that this app does not save any data to any server, so it is very
+      important that you <a href="#download">Download</a> your work after
+      you're done, otherwise all of your progress will be lost.</p>
+    <p>If you need any further <a href="#help">Help</a>, feel free to ask any question.</p>
+  </main>)
+}
 
-      ReactDOM.render( <App />, document.getElementById('root') );
+function HelpPage(props) {
+  return (<main className='w-100 pt-4'><div className='w-50 mx-auto'>
+<h1 className='w3-text-theme'>Help for you</h1>
+<h4>Q: How do I edit or delete an entry?</h4>
+<p>A: DOUBLE-CLICK the row that you want to edit or delete. That row will be deleted 
+and its details will be copied to the input row above it. You can edit that input row 
+and press ENTER (or CLICK the + button) to resubmit the edit, or ignore it for 
+a full delete.</p>
+<h4>Q: What is Income?</h4>
+<p>A: Any money that you receive. Salary, bonus, stipend, compensation, investment 
+dividend, someone paying back a personal loan, bank account balance carryover at the 
+start of the financial year, ...</p>
+<h4>Q: What is Expense?</h4>
+<p>A: Any money that you spend. Buying something, paying fees and penalties, 
+paying taxes, paying loan installments, ...</p>
+<h4>Q: What is Gross Worth?</h4>
+<p>A: Gross Worth = Total Income - Total Expense</p>
+<h4>Q: What is Net Worth?</h4>
+<p>A: Net Worth = Gross Worth + Total Obligation</p>
+<h4>Q: What is Obligation?</h4>
+<p>A: Deferred expense and income. A positive obligation is when someone/something
+promises to pay you a specific amount at a later date (deferred income). A negative 
+obligation is when you promise to pay someone/something a specific amount at a 
+later date (deferred expense).</p>
+<p> Recording deferred expense/income helps you better understand your financial
+position at a particular moment. Your goal in this game is to try keep both 
+your gross worth and net worth above zero. Between net worth and gross worth,
+the lower amount represents your discretionary fund that you can spend on 
+entertainment or luxury. Stop any luxury spending before you dip into 
+negative worth.</p>
+<p><strong>Example 1:</strong> You have a big yearly payment commitment (motor 
+insurance, college tuition, property tax, club membership) of $6000. 
+An easy way to spread out this commitment/obligation is to record the amount 
+divided by 12 as a negative obligation on every month. This is an example of
+deferred expense. Even though you haven't made the payment yet, you pretend
+that you have made fractions of the payment by recording it as a negative 
+obligation.</p>
+<span style={textCode}>OBLIGATION | 1-Feb | tuition | -$500</span><br />
+<span style={textCode}>OBLIGATION | 1-Mar | tuition | -$500</span><br />
+<span style={textCode}>OBLIGATION | 1-Apr | tuition | -$500</span><Space />
+<p>This will automatically deduct that amount from your net worth, which signals
+that you don't have as much discretionary fund as your bank account statement might
+tell you. At the end of the year, when it's time to pay that commitment, record it
+as an expense, and also record the same amount as a positive obligation.</p>
+<span style={textCode}>EXPENSE    | 31-Dec | tuition | $6000</span><br />
+<span style={textCode}>OBLIGATION | 31-Dec | tuition | $6000</span><Space />
+<p><strong>Example 2: </strong> You lend $300 to a friend, who promises to
+pay it back in three months. Record it as an expense, and also as a positive obligation
+by the same amount. This signals that while there is less money in your 
+bank account, you have more worth available that is locked up. This is an 
+example of deferred income. Even though you haven't received the money yet,
+you pretend as if you have received the money by recording it as a positive
+obligation.</p>
+<span style={textCode}>EXPENSE    | 24-Feb | loan to John | $300</span><br />
+<span style={textCode}>OBLIGATION | 24-Feb | loan to John | $300</span><Space />
+<p>When the friend pays the loan back, record it as an income, and also a negative
+obligation by the same amount.</p>
+<span style={textCode}>INCOME     | 24-May | loan to John |  $300</span><br />
+<span style={textCode}>OBLIGATION | 24-May | loan to John | -$300</span><Space />
+<p><strong>Example 3: </strong> You borrow $300 from a friend, promising to
+pay it back in three months. Record it as an income, and also as a negative obligation
+by the same amount. This signals that while there is more money in your 
+bank account, this is not part of your discretionary fund. This is an 
+example of deferred expense. Even though you haven't paid back the loan yet,
+you pretend as if you have paid the loan by recording it as a negative
+obligation.</p>
+<span style={textCode}>INCOME     | 24-Feb | loan from John |  $300</span><br />
+<span style={textCode}>OBLIGATION | 24-Feb | loan from John | -$300</span><Space />
+<p>When the you pay the loan back, record it as an expense, and also a positive
+obligation by the same amount.</p>
+<span style={textCode}>EXPENSE    | 24-May | loan from John | $300</span><br />
+<span style={textCode}>OBLIGATION | 24-May | loan from John | $300</span><Space />
+<h4>Q: How do I record investments and savings?</h4>
+<p>A: You could record your deposits into an investment account as an expense,
+paired with a positive obligation. This signals that while your checking account 
+balance may be low, you have a significant amount of worth tied up elsewhere. 
+The dividend is recorded as income if you withdraw it, or as a positive obligation 
+if you immediately reinvest it.</p>
+<span style={textCode}>EXPENSE    | 26-Feb | invest   | $300</span><br />
+<span style={textCode}>OBLIGATION | 26-Feb | invest   | $300</span><br />
+<span style={textCode}>EXPENSE    | 26-Mar | invest   | $300</span><br />
+<span style={textCode}>OBLIGATION | 26-Mar | invest   | $300</span><br />
+<span style={textCode}>EXPENSE    | 26-Apr | invest   | $300</span><br />
+<span style={textCode}>OBLIGATION | 26-Apr | invest   | $300</span><br />
+<span style={textCode}>INCOME     | 01-May | dividend | $550</span><Space />
+<p>When you withdraw from an investment account, record it as an income,
+paired with an equal amount of negative obligation.</p>
+<span style={textCode}>INCOME     | 17-Oct | investment   |  $70,000</span><br />
+<span style={textCode}>OBLIGATION | 17-Oct | investment   | -$70,000</span><Space />
+<p>But some people have a phobia of excess fund. You could also record investment
+deposits simply as expense, treating the amount in your investment account as
+a mystery so that you can't be tempted to spend it. Withdrawing from the 
+investment account then is just an income.</p>
+<span style={textCode}>EXPENSE    | 26-Feb | invest    | $300</span><br />
+<span style={textCode}>EXPENSE    | 26-Mar | invest    | $300</span><br />
+<span style={textCode}>EXPENSE    | 26-Apr | invest    | $300</span><br />
+<span style={textCode}>INCOME     | 26-May | invest W/ | $1000</span><Space />
+<h4>Q: How do I record credit card transaction?</h4>
+<p>A: When you charge a purchase on a credit card, you haven't actually paid
+anything yet. Since this is a deferred expense, you can record it as a
+negative obligation. When you pay the credit card balance at the end of 
+the month, then it is an expense, paired with a positive obligation of 
+the same amount.</p>
+<span style={textCode}>OBLIGATION |  5 Jul | clothing | -$50</span><br />
+<span style={textCode}>OBLIGATION |  6 Jul | grocery  | -$80</span><br />
+<span style={textCode}>OBLIGATION |  7 Jul | coffee   | -$20</span><br />
+<span style={textCode}>EXPENSE    | 31 Jul | cc bal   | $150</span><br />
+<span style={textCode}>OBLIGATION | 31 Jul | cc bal   | $150</span><Space />
+<p>However, if you are the kind of person that uses a credit card as 
+if it is a debit card and fully pays off the balance every month,
+you could just record every credit card charge like a normal expense.
+In this case, the payment of credit card balance at the end of the month
+is not recorded.</p>
+<span style={textCode}>EXPENSE |  5 Jul | clothing | $50</span><br />
+<span style={textCode}>EXPENSE |  6 Jul | grocery  | $80</span><br />
+<span style={textCode}>EXPENSE |  7 Jul | coffee   | $20</span><Space />
+<h4>Q: How do I record cash withdrawal?</h4>
+<p>** This is written assuming that you are a millenial adult living in a 
+fairly developed country who doesn't really use cash for significant expenses all 
+that much anymore.</p>
+<p>A: Technically, cash withdrawal is not any kind of transaction. Only when you
+buy something with that cash would it become an expense. However, since cash 
+is often used for small purchases that are tedious to record, it's easier 
+to just record the cash withdrawal as an expense to lump together all of your 
+small cash expenses.</p>
+<span style={textCode}>EXPENSE | 13-Mar | cash withdraw | $300</span><Space />
+<p>In the rare case where you had to make a big expense with cash, you may
+record it as such. Let's say you withdraw $500 to buy an item for $467 cash.</p>
+<span style={textCode}>EXPENSE | 26-Mar | antique clock | $467</span><br />
+<span style={textCode}>EXPENSE | 26-Mar | cash withdraw |  $33</span><Space />
+<h4>Q: Why doesn't the app save data to the server?</h4>
+<p>A: That would be convenient for sure, but is a privacy risk. You should store
+your financial records locally, or on a secure file hosting service.</p>
+<h4>Q: How do I transition to the next financial year?</h4>
+<p>A: On the New page, type your current Gross Worth into the Starting Balance field,
+and your current total Obligation into the Starting Obligation field.</p>
+<Space /> &nbsp; <Space /> &nbsp; <Space /> &nbsp;
+  </div></main>)
+}
+
+function LoadPage(props) {
+  const [ff, setFile] = React.useState(null);
+
+  return (<main className='w-75 mx-auto pt-4 container'>
+    <div className='row m-3 p-3'><div className='col'>
+      <h1 className='w3-text-theme text-center'>
+        Load a previously saved spreadsheet
+      </h1>
+    </div></div>
+    <div className='row '>
+      <div className='col m-3 p-3 bg-white'>
+        <h3>Load from file</h3>
+        <p>It should be a <span style={textCode}>.json</span> file:</p>
+        <input type="file" accept=".json" className='form-control' />
+        <p></p>
+        <p>Make sure you have saved/downloaded any active spreadsheet,
+          because loading a new one will overwrite the current one.</p>
+        <button className='btn btn-primary'>LOAD</button>
+      </div>
+      <div className='col m-3 p-3 bg-white'>
+        <h3>Load from browser storage</h3>
+      </div>
+    </div>
+  </main>)
+}
+
+function DownloadPage(props) {
+  return (<main className='w-50 mx-auto pt-4'>
+<h1 className='w3-text-theme'>Download the spreadsheet</h1>
+<p>The app will download the data you had entered into a file. This file is
+not encrypted or obfuscated in any way, it's just structured into JSON.
+It is not copyright protected. It is your data, and you are free to inspect,
+copy, distribute, or modify it whichever way you want.</p>
+<p>However, manual modification may cause that file to be in an invalid
+format, and thus unrecognizable and unusable by this app.</p>
+<p>Keep this file in a dusty corner of your computer, or upload it to a secure
+file hosting service. The next time you want to use this app again, find 
+that file and <a href="#load">Load</a> it back into the app.</p>
+<p><button className='btn btn-primary'>DOWNLOAD</button></p>
+<p></p>
+  </main>)
+}
+
+function PopoutTooltip({children}) {
+  function show(e) {
+    const ss = e.target.children[0];
+    if (ss && ss.style) ss.style.visibility = 'visible';
+  }
+
+  function hide(e) {
+    const ss = e.target.children[0];
+    if (ss && ss.style) ss.style.visibility = 'hidden';
+  }
+
+  return <div 
+        className='col-1'
+        style={tooltip}
+        onMouseOver={(e)=>show(e)}
+        onMouseOut={(e)=>hide(e)}>
+      &#x1F6C8;
+      <span style={tooltipText} className='w3-theme-l1'>
+        {children}
+      </span>
+    </div>
+}
+
+function NewPage(props) {
+  const today = new Date();
+  const dateFmt = today.toLocaleDateString()
+    .split(/[-./]/g)
+    .filter((a) => a < 32)
+    .join(today.toLocaleDateString().match(/[-./]/g)[0])
+  
+  function submit(e) {
+    e.preventDefault()
+    const formData = JSON.stringify(
+      Object.fromEntries(
+        new FormData(e.target)));
+    console.log(formData)
+  }
+
+  return (<main className='w-100 pt-4'>
+    <div className='w-50 mx-auto'>
+      <h1 className='w3-text-theme'>Create new spreadsheet</h1>
+      <p>Make sure you have saved/downloaded any active spreadsheet,
+        because creating a new one will overwrite the current one.</p>
+    </div>
+    <form className='container w-50' onSubmit={submit} >
+      <div className='row mb-3 align-items-center'>
+        <div className='col-4'>Name</div>
+        <div className='col'>
+          <input type='text' className='form-control'
+            defaultValue='You' name='name' />
+        </div>
+        <PopoutTooltip>
+          Who or what this account is about. It could be a person,
+          a legal entity (a married couple, a trust),
+          an organization (school club, neighbourhood watch),
+          an activity (wedding, party),
+          or a business.
+        </PopoutTooltip>
+      </div>
+      <div className='row mb-3 align-items-center'>
+        <div className='col-4'>Year</div>
+        <div className='col'>
+          <input type='number' className='form-control'
+            defaultValue={today.getFullYear()} name='year' />
+        </div>
+        <PopoutTooltip>
+          This spreadsheet will only be valid for one year,
+          from 1 January to 31 December. Start a new spreadsheet at
+          the start of a new calendar year. Non-calendar fiscal year
+          is not supported.
+        </PopoutTooltip>
+      </div>
+      <div className='row mb-3 align-items-center'>
+        <div className='col-4'>Your date format</div>
+        <div className='col'>
+          <input type='text' className='form-control' 
+            readonly value={dateFmt} />
+        </div>
+        <PopoutTooltip>
+          There are many variations in how a date is written around
+          the world. Displayed here is how your browser is configured
+          to display and interpret today's date. Note the month and day
+          order, and the separator used. Please use this exact
+          same format when recording your account transactions.
+        </PopoutTooltip>
+      </div>
+      <div className='row mb-3'>
+        <div className='col-11 border-top '></div>
+      </div>
+      <div className='row mb-3 align-items-center'>
+        <div className='col-4'>Starting balance</div>
+        <div className='col'>
+          <input type='number' className='form-control' 
+            placeholder='optional' name='startingBalance' />
+        </div>
+        <PopoutTooltip>
+          The total of your checking account balance(s),
+          also known as your gross worth.
+        </PopoutTooltip>
+      </div>
+      <div className='row mb-3 align-items-center'>
+        <div className='col-4'>Starting month</div>
+        <div className='col'>
+          <input type='number' className='form-control' 
+            placeholder='optional' name='startingMonth'
+            min='1' max='12' />
+        </div>
+        <PopoutTooltip>
+          If you enter any amount in the starting balance field, by default
+          it will be recorded on the date 1/1. Use this field to specify a
+          different starting month.
+        </PopoutTooltip>
+      </div>
+      <div className='row mb-3 align-items-center'>
+        <div className='col-4'>Currency label</div>
+        <div className='col'>
+          <input type='text' className='form-control' 
+            placeholder='optional' name='currencyLabel' />
+        </div>
+        <PopoutTooltip>
+          Purely cosmetic. Multi-currency input and conversion is not supported. 
+        </PopoutTooltip>
+      </div>
+      <div className='row mb-3 align-items-center'>
+        <div className='col-4'>Color theme</div>
+        <div className='col-7'>
+          <select name='colorTheme' className='form-control' defaultValue='deep purple'>
+            {['Red', 'Pink', 'Purple', 'Deep Purple', 'Indigo', 'Blue', 'Light Blue', 'Cyan',
+              'Teal', 'Green', 'Light Green', 'Lime', 'Khaki', 'Yellow', 'Amber', 'Orange',
+              'Deep Orange', 'Blue Grey', 'Brown', 'Grey', 'Dark Grey', 'Black', 'None'
+            ].map((cc) => <option value={cc.toLowerCase()}>{cc}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className='row mb-3 justify-content-center'>
+        <div className='col-6'>
+          <input type='submit' className='btn btn-primary w-100' />
+        </div>
+      </div>
+    </form>
+  </main>)
+}
+
+function SpreadsheetPage(props) {
+  return (<main className='pt-4'>
+    <h1 className='w3-text-theme'>You 2022</h1>
+    
+  </main>)
+}
+
     </script>
      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" 
       integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" 
