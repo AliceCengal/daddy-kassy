@@ -63,6 +63,21 @@
     .mytooltip:hover .mytooltiptext {
       visibility: visible;
     }
+
+    .sheet-table {
+      display: grid;
+      grid-template-columns: 1fr 4fr 1fr;
+      margin-bottom: auto;
+    }
+
+    .sheet-table *:nth-child(3n) {
+      text-align: right;
+    }
+
+    .reading-box {
+      max-width: 50rem;
+      width: calc(100% - 3rem);
+    }
   </style>
 </head>
 
@@ -74,9 +89,6 @@
     ReactDOM.render(<App />, document.getElementById('root'));
 
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
-    crossorigin="anonymous"></script>
 </body>
 
 </html>

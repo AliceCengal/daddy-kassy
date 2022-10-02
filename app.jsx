@@ -6,7 +6,7 @@ function App(props) {
   const [currentPage, setPage] = React.useState(
     window.location.hash.slice(1) || 'about');
   const [colorTheme, setColorTheme] = React.useState('deep-purple');
-  const [account, setAccount] = React.useState(null)
+  const [account, setAccount] = React.useState(new AccountDatabase('You', 2022))
 
   React.useEffect(() => {
     window.addEventListener("hashchange", handleHashChange);
@@ -61,7 +61,7 @@ function Navbar(props) {
 }
 
 function AboutPage(props) {
-  return (<main className='w-50 mx-auto pt-4'>
+  return (<main className='reading-box mx-auto pt-4'>
     <h1 className='w3-text-theme'>About this app</h1>
     <p>This is an app for tracking and analyzing simple personal income, expense,
       and investment. The target audience is an average working adult.</p>
@@ -78,7 +78,7 @@ function AboutPage(props) {
 }
 
 function HelpPage(props) {
-  return (<main className='w-100 pt-4'><div className='w-50 mx-auto mb-5'>
+  return (<main className='w-100 pt-4'><div className='reading-box mx-auto mb-5'>
     <h1 className='w3-text-theme'>Help for you</h1>
     <h4>Q: How do I edit or delete an entry?</h4>
     <p>A: DOUBLE-CLICK the row that you want to edit or delete. That row will be deleted
@@ -246,36 +246,48 @@ function LoadPage({ setAccount }) {
     window.location.hash = 'spreadsheet'
   }
 
-  return (<main className='w-75 mx-auto pt-4 container'>
+  const LoadFromFile = (
+    <Card className='p-3'>
+      <h3>Load from file</h3>
+      <p>It should be a <span className='text-code'>.json</span> file:</p>
+      <input type="file" accept=".json" className='form-control mb-3'
+        onChange={choosenFile} />
+      {tempAccount === null ? null :
+        <p className='bg-light px-3'>
+          {tempAccount.name}, {tempAccount.year} -
+          {tempAccount.transactions.length} transactions</p>}
+      <p>Make sure you have saved/downloaded any active spreadsheet,
+        because loading a new one will overwrite the current one.</p>
+      {tempAccount === null ?
+        <button className='btn btn-primary' disabled>LOAD</button>
+        : <button className='btn btn-primary' onClick={chooseAccount}>
+          LOAD {tempAccount.name}, {tempAccount.year}
+        </button>}
+    </Card>
+  )
+
+  const LoadFromStorage = (
+    <Card className='p-3'>
+      <h3>Load from browser storage</h3>
+      {localStorage.length > 1 ?
+        storedAccount.map((aa) =>
+          <p>aa</p>)
+        : <p>No items in local storage</p>}
+    </Card>
+  )
+
+  return (<main className='reading-box mx-auto pt-4 container'>
     <div className='row mb-3'>
       <h1 className='w3-text-theme col text-center'>
         Load a previously saved spreadsheet
       </h1>
     </div>
-    <div className='row '>
-      <div className='col mx-3 p-3 bg-white shadow-sm'>
-        <h3>Load from file</h3>
-        <p>It should be a <span className='text-code'>.json</span> file:</p>
-        <input type="file" accept=".json" className='form-control mb-3'
-          onChange={choosenFile} />
-        {tempAccount === null ? null :
-          <p className='bg-light px-3'>
-            {tempAccount.name}, {tempAccount.year} -
-            {tempAccount.transactions.length} transactions</p>}
-        <p>Make sure you have saved/downloaded any active spreadsheet,
-          because loading a new one will overwrite the current one.</p>
-        {tempAccount === null ?
-          <button className='btn btn-primary' disabled>LOAD</button>
-          : <button className='btn btn-primary' onClick={chooseAccount}>
-            LOAD {tempAccount.name}, {tempAccount.year}
-          </button>}
+    <div className='row gx-3'>
+      <div className='col'>
+        {LoadFromFile}
       </div>
-      <div className='col p-3 bg-white shadow-sm'>
-        <h3>Load from browser storage</h3>
-        {localStorage.length ?
-          storedAccount.map((aa) =>
-            <p>aa</p>)
-          : <p>No items in local storage</p>}
+      <div className='col'>
+        {LoadFromStorage}
       </div>
     </div>
   </main>)
@@ -326,7 +338,7 @@ function DownloadPage({ account }) {
     } else alert("Create an account first.")
   }
 
-  return (<main className='w-50 mx-auto pt-4'>
+  return (<main className='reading-box mx-auto pt-4'>
     <h1 className='w3-text-theme'>Download the spreadsheet</h1>
     <p>The app will download the data you had entered into a file. This file is
       not encrypted or obfuscated in any way, it's just structured into JSON.
@@ -413,12 +425,12 @@ function NewPage({ setAccount }) {
   }
 
   return (<main className='w-100 pt-4'>
-    <div className='w-50 mx-auto'>
+    <div className='reading-box mx-auto'>
       <h1 className='w3-text-theme'>Create new spreadsheet</h1>
       <p>Make sure you have saved/downloaded any active spreadsheet,
         because creating a new one will overwrite the current one.</p>
     </div>
-    <form className='container w-50' onSubmit={submit} >
+    <form className='container reading-box' onSubmit={submit} >
       <div className='row mb-3 align-items-center'>
         <div className='col-4'>Name</div>
         <div className='col'>
@@ -519,39 +531,63 @@ function NewPage({ setAccount }) {
   </main>)
 }
 
+function Card({ className, children }) {
+  return <div className={`bg-white shadow-sm ${className || ''}`}>
+    {children}
+  </div>
+}
+
 function SpreadsheetPage({ account, setAccount }) {
-  //if (account === null) window.location.hash = 'new';
-  return (<main className='pt-3 container w-100'>
-    <div className='row mb-2'>
-      <div
-        className='col d-flex justify-content-between align-items-center bg-white shadow-sm py-3 mx-2'>
-        <h4 className='w3-text-theme d-inline-block m-0'>
-          {account ? `${account.name} ${account.year}` : "Placeholder 0000"}
-        </h4>
-        <div className='mytooltip'>
-          <span className='py-3'>gadgets</span>
-          <div className='mytooltiptext mttt-below d-flex flex-column align-items-end'>
-            <button className='btn btn-secondary'>timeline</button>
-            <button className='btn btn-secondary'>proportion</button>
-            <button className='btn btn-secondary'>template</button>
-          </div>
+  const [openGadget, setOpenGadget] = React.useState('')
+
+  account.calculateMeta()
+
+  const TitleBox = (
+    <Card className='d-flex justify-content-between align-items-center p-3'>
+      <h4 className='w3-text-theme d-inline-block m-0'>
+        {`${account.name} ${account.year}`}
+      </h4>
+      <div className='mytooltip'>
+        <span className='py-3'>gadgets</span>
+        <div className='mytooltiptext mttt-below d-flex flex-column align-items-end'>
+          <button className='btn btn-secondary w-100'>timeline</button>
+          <button className='btn btn-secondary'>proportion</button>
+          <button className='btn btn-secondary w-100'>template</button>
         </div>
       </div>
-      <div className='col d-flex flex-row justify-content-between align-items-center mx-2'>
-        <div></div><span>gross worth</span>
-        <span className="text-code">0.00</span>
+    </Card>
+  )
+
+  return (<main className='pt-3 w-100'><div className='container'>
+    <div className='row mb-3 gx-3'>
+      <div className='col'>
+        {TitleBox}
       </div>
-      <div className='col d-flex flex-row justify-content-between align-items-center mx-2'>
-        <div></div><span>net worth</span>
-        <span className="text-code">0.00</span>
+      <div className='col'>
+        <div className='d-flex flex-row justify-content-between align-items-center p-3'>
+          <div></div><span>gross worth</span>
+          <span className="text-code">
+            {account.currency} {account.meta.grossworth.toFixed(2)}
+          </span>
+        </div>
       </div>
+      <div className='col'>
+        <div className='d-flex flex-row justify-content-between align-items-center p-3'>
+          <div></div><span>net worth</span>
+          <span className="text-code">
+            {account.currency} {account.meta.networth.toFixed(2)}
+          </span>
+        </div></div>
     </div>
-    <div className='row'>
+    <div className='row mb-3 gx-3'>
       <TableTop account={account} table='income' />
       <TableTop account={account} table='expense' />
       <TableTop account={account} table='obligation' />
     </div>
-  </main>)
+    {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((month) =>
+      <MonthTable account={account} month={month} />
+    )}
+  </div></main>)
 }
 
 function Timeline(props) {
@@ -613,43 +649,53 @@ function Template(props) {
   </div>
 }
 
-function Sheet(props) {
-  return <div className='d-grid'>
-    <TableTop table='income' />
-    <TableTop table='expense' />
-    <TableTop table='obligation' />
-    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((month) =>
-      <MonthTable />
-    )}
-  </div>
-}
-
 function TableTop({ account, table }) {
-  const ll = <table>
-    <tr className="topline"><td colspan="3">INCOME</td></tr>
-    <tr className="bottomline"><td>Date</td><td>Detail</td><td>Amount</td></tr>
-    <tr><td><button class="round-button-small" id="sheet-add-income">&nbsp;&plus;&nbsp;</button></td>
-      <td>TOTAL</td><td class="text-code" id="sheet-income-total">0.00</td></tr>
-    <tr><td><input type="text" id="sheet-new-income-date" size="1" /></td>
-      <td><input type="text" id="sheet-new-income-detail" /></td>
-      <td><input type="text" id="sheet-new-income-amount" size="1" /></td></tr>
-  </table>
-
-  return <div className='col p-2 mx-2 shadow-sm bg-white'>
-    <div className='d-flex justify-content-between'>
-      <span>{table.toUpperCase()}</span><span>0.00</span>
-    </div>
-    <div className='d-flex justify-content-between'>
-      <span>Date</span><span>Detail</span><span>Amount</span>
-    </div>
-    <div></div>
+  return <div className='col-lg-4 col-xs-12'>
+    <Card className='sheet-table p-2'>
+      <span></span><span className='text-center'>{table.toUpperCase()}</span>
+      <span className='text-code'>
+        {account.currency} {account.meta['total' + table].toFixed(2)}
+      </span>
+      <span>Date</span><span className='text-center'>Detail</span><span>Amount</span>
+      <input size='1' /><input /><input size='1' />
+    </Card>
   </div>
 }
 
 function MonthTable(props) {
-  return <React.Fragment>
-    <table></table>
-  </React.Fragment>
+  const trxs2 = props.account.getForMonth(props.month)
+
+  if (trxs2[0].length == 0 && trxs2[1].length == 0 && trxs2[2].length == 0)
+    return null;
+  else return <div className='row mb-3 gx-3'>
+    <div className='col'><div className='sheet-table shadow-sm bg-white p-2'>
+      {trxs2[0].map(trx =>
+        <React.Fragment>
+          <span>{props.account.getDateString(trx)}</span>
+          <span>{trx.name}</span>
+          <span className="text-code">{Number(trx.amount).toFixed(2)}</span>
+        </React.Fragment>
+      )}
+    </div></div>
+    <div className='col'><div className='sheet-table shadow-sm bg-white p-2'>
+      {trxs2[1].map(trx =>
+        <React.Fragment>
+          <span>{props.account.getDateString(trx)}</span>
+          <span>{trx.name}</span>
+          <span className="text-code">{Number(trx.amount).toFixed(2)}</span>
+        </React.Fragment>
+      )}
+    </div></div>
+    <div className='col'><div className='sheet-table shadow-sm bg-white p-2'>
+      {trxs2[2].map(trx =>
+        <React.Fragment>
+          <span>{props.account.getDateString(trx)}</span>
+          <span>{trx.name}</span>
+          <span className="text-code">{Number(trx.amount).toFixed(2)}</span>
+        </React.Fragment>
+      )}
+    </div></div>
+  </div>
 }
 
 function AccountDatabase(name, year) {
@@ -660,6 +706,14 @@ function AccountDatabase(name, year) {
   this.transactions = [];
   this.currency = "";
   this.colorTheme = "deep-purple";
+
+  this.meta = {
+    totalincome: 0.0,
+    totalexpense: 0.0,
+    totalobligation: 0.0,
+    grossworth: 0.0,
+    networth: 0.0
+  }
 
   this.INCOME = "INCOME";
   this.MONTHLY = "MONTHLY";
@@ -716,6 +770,21 @@ function AccountDatabase(name, year) {
       return d.getMonth() === month && a.type === type;
     });
   };
+
+  this.getForMonth = function (month) {
+    return this.transactions.reduce((cumm, curr) => {
+      const d = (new Date(curr.date)).getMonth();
+      if (d === month) {
+        if (curr.type === 'income') {
+          cumm[0].push(curr)
+        } else if (curr.type === 'expense') {
+          cumm[1].push(curr)
+        } else if (curr.type === 'obligation') {
+          cumm[2].push(curr)
+        }
+      } return cumm;
+    }, [[], [], []])
+  }
 
   this.isThisMonthTrx = function (month) {
     return this.transactions.filter(function (a) {
@@ -783,8 +852,29 @@ function AccountDatabase(name, year) {
 
     return wbd;
   };
-}
 
+  this.calculateMeta = function () {
+    const meta = this.transactions.reduce((cumm, curr) => {
+      if (curr.type === 'income') {
+        cumm[0] += Number(curr.amount);
+      } else if (curr.type === 'expense') {
+        cumm[1] += Number(curr.amount);
+      } else if (curr.type === 'obligation') {
+        cumm[2] += Number(curr.amount);
+      }
+      return cumm;
+    }, [0, 0, 0]);
+
+
+    this.meta = {
+      totalincome: meta[0],
+      totalexpense: meta[1],
+      totalobligation: meta[2],
+      grossworth: meta[0] - meta[1],
+      networth: meta[0] - meta[1] + meta[2]
+    }
+  }
+}
 function accountDatabaseFromFile(o) {
   if (typeof o.version == 'undefined' || o.version < VERSION)
     return legacyImport(o);
