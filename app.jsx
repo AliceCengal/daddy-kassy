@@ -1,9 +1,8 @@
 /** @jsx preact.h */
 
-var React = { 
-  Fragment: preact.Fragment,
-  useState: preactHooks.useState,
-  useEffect: preactHooks.useEffect,
+var React = {
+  ...preact,
+  ...preactHooks,
 };
 
 const TODAY = new Date();
@@ -24,7 +23,7 @@ function App(props) {
 
   function handleHashChange(e) { setPage(window.location.hash.slice(1)) }
 
-  return <>
+  return <React.Fragment>
     <Navbar />
     {(currentPage === 'about' ? <AboutPage /> : null)}
     {(currentPage === 'help' ? <HelpPage /> : null)}
@@ -36,7 +35,7 @@ function App(props) {
       <NewPage setAccount={setAccount} color={colorTheme} setColor={setColorTheme} /> : null)}
     {(currentPage === 'spreadsheet' ?
       <SpreadsheetPage account={account} setAccount={setAccount} /> : null)}
-  </>
+  </React.Fragment>
 }
 
 function NavbarLink({ label }) {
