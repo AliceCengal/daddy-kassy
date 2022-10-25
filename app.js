@@ -1,4 +1,5 @@
 import { AboutPage, HelpPage } from "./static.js";
+import { cussyInit, cussyReducer, Cussy } from "./lib.js";
 
 var h = preact.h;
 
@@ -8,10 +9,9 @@ const React = {
 };
 
 const TODAY = new Date();
-const VERSION = 4.0;
 const ENTER_KEY = 13;
 const SECTIONS = [
-  'Spreadsheet', 'New', 'Load', 'Save', 'Help', 'About'
+  'spreadsheet', 'new', 'load', 'save', 'help', 'about'
 ];
 
 const dateFmt = TODAY.toLocaleDateString()
@@ -61,9 +61,10 @@ function NavbarLink({ label }) {
 
   return (
     h("button", {
-      disabled: hash === label.toLowerCase(),
-      class: "btn btn-light w3-text-theme",
-      onClick: () => window.location.hash = label.toLowerCase()
+      disabled: hash === label,
+      class: "btn btn-primary w3-text-theme",
+      style: { textTransform: "capitalize" },
+      onClick: () => window.location.hash = label
     }, label)
   )
 }
@@ -74,24 +75,30 @@ const copyright = [
   "\xA9 Athran Zuhail 2022 all\xA0rights\xA0reserved"
 ]
 
+const LinkBar = () => (
+  h("nav", { class: "btn-group" },
+    SECTIONS.map(s =>
+      h(NavbarLink, { label: s }))))
+
+const LinkBeam = () => (
+  h("nav", { class: "d-flex flex-column float-menu" },
+    SECTIONS.map(s =>
+      h(NavbarLink, { label: s }))))
+
 function Navbar(props) {
   const [drawer, openDrawer] = React.useState(false);
-
-  const LinkBar = h("nav", {
-    class: "btn-group"
-  }, SECTIONS.map(s => h(NavbarLink, {
-    label: s
-  })));
 
   return [
     h("header", { class: "w3-theme-l1 p-2 shadow d-none d-md-flex" },
       h("div", { class: "h1 m-0" }, "Daddy\xA0Cussy"),
-      LinkBar,
+      LinkBar(),
       h("div", { class: "copyright" }, ...copyright)),
     h("header", { class: "w3-theme-l1 p-2 shadow d-flex d-md-none" },
       h("span", { class: "h2 m-0" }, "Daddy Cussy"),
-      h("div", { class: "hamburger d-inline-block" },
-        h("div", null), h("div", null), h("div", null)))
+      h("div", null,
+        h("div", { class: "hamburger d-inline-block p-0" },
+          h("div", null), h("div", null), h("div", null)),
+        LinkBeam()))
   ];
 }
 
@@ -121,7 +128,7 @@ function LoadPage() {
   }
 
   function chooseAccount(e) {
-    actionsFromFile(tempAccount).forEach(dispatch);
+    Cussy.actionsFromFile(tempAccount).forEach(dispatch);
     window.location.hash = 'spreadsheet';
   }
 
@@ -257,6 +264,13 @@ function NewPage() {
         amount: Number(formData.startingBalance)
       });
     }
+
+    if (formData.currency) {
+      dispatch({
+        type: "currency",
+        currency: formData.currency,
+      })
+    }
     window.location.hash = 'spreadsheet';
   }
 
@@ -365,7 +379,7 @@ function NewPage() {
               h("option", { value: cc.toLowerCase().replace(' ', '-') }, cc))))),
         h("div", { class: "row justify-content-center my-3" },
           h("div", { class: "col-6" },
-            h("input", { hidden: true, name: "version", defaultValue: VERSION }),
+            h("input", { hidden: true, name: "version", defaultValue: state.version }),
             h("input", { type: "submit", class: "btn btn-primary w-100" }))))));
 }
 
@@ -375,7 +389,10 @@ function Card(props) {
 }
 
 const SheetStyle = {
-  main: { style: { maxWidth: '80rem', margin: 'auto' } },
+  submain: {
+    class: "row row-cols-3 g-3",
+    style: { maxWidth: '80rem', margin: 'auto' }
+  },
   titleBox: { class: "d-flex justify-content-between align-items-center p-0" },
   title: { class: "w3-text-theme d-inline-block m-3" },
   worthBox: {
@@ -417,8 +434,8 @@ function SpreadsheetPage() {
         (state.totalsTrx[0] - state.totalsTrx[1] + state.totalsTrx[2]).toFixed(2)));
 
   return (
-    h("main", SheetStyle.main,
-      h("div", { class: "row row-cols-3 g-3" },
+    h("main", null,
+      h("div", SheetStyle.submain,
         h("div", { class: "col-12 col-md-4" }, TitleBox),
         h("div", { class: "col-6 col-md-4" }, GrossWorthBox),
         h("div", { class: "col-6 col-md-4" }, NetWorthBox),
@@ -555,9 +572,9 @@ function TableTop({ table }) {
   return (
     h(Card, { class: "sheet-table p-2" },
       h("span"),
-      h("span", { class: "text-center" }, table.toUpperCase()),
+      h("span", { class: "text-center capitalize" }, table),
       h("span", { class: "text-code" },
-        state.currency, " ", state.totalsTrx[tableIx(table)].toFixed(2)),
+        state.currency, " ", state.totalsTrx[Cussy.tableIx(table)].toFixed(2)),
 
       h("span", null, "Date"),
       h("span", { class: "text-center" }, "Detail"),
@@ -572,7 +589,7 @@ const MonthTableStyle = { class: "sheet-table shadow-sm bg-white p-2" }
 
 function MonthTable({ month }) {
   const { state, dispatch } = React.useContext(AppCtx);
-  const trxs = getForMonth(state.transactions, month);
+  const trxs = Cussy.getForMonth(state.transactions, month);
 
   if (trxs[0].length == 0 && trxs[1].length == 0 && trxs[2].length == 0)
     return null;
@@ -586,207 +603,9 @@ function MonthTable({ month }) {
           h("span", { class: "text-code" }, trx.amount.toFixed(2)))))));
 }
 
-function cussyInit(name, year) {
-  return {
-    version: VERSION,
-    name: name || 'You',
-    year: year || 2022,
-    currency: '',
-    colorTheme: 'deep-purple',
-    template: [],
-    transactions: [],
-    totalsTemplate: [0.0, 0.0, 0.0],
-    totalsTrx: [0.0, 0.0, 0.0],
-    alertMessage: ''
-  };
-}
-
-function actionsFromFile(temp) {
-  return [
-    { type: 'new', name: temp.name, year: temp.year },
-
-    temp.colorTheme ?
-      { type: 'colorTheme', colorTheme: temp.colorTheme } : null,
-
-    temp.currency ?
-      { type: 'currency', currency: temp.currency } : null,
-
-    {
-      type: 'addManyTrx',
-      many: temp.transactions.map(({ type, table, name, date, amount }) => (
-        {
-          table: type.toLowerCase() || table,
-          name,
-          dateInput: date,
-          amount: Number(amount)
-        }
-      ))
-    },
-
-    {
-      type: 'addManyTemplate',
-      many: temp.template.map(({ trxType, table, name, amount }) => (
-        {
-          table: trxType.toLowerCase() || table,
-          name,
-          amount: Number(amount)
-        }
-      ))
-    }
-  ].filter(Boolean);
-}
-
-const TABLES = ['income', 'expense', 'obligation'];
-
-const TABLE_IX = {
-  'income': 0,
-  'expense': 1,
-  'monthly': 1,
-  'obligation': 2,
-  'yearly': 2
-};
-
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
-
-function tableIx(tbl) {
-  return TABLE_IX[tbl];
-}
-
-function trxReducer(prev, curr) {
-  prev[TABLE_IX[curr.table]] += curr.amount;
-  return prev;
-}
-
-function trxMake(list, year, table, name, dateInput, amount) {
-  const id = list.reduce((a, b) => Math.max(a, b.id), 0);
-
-  let date = dateInput ? new Date(dateInput) : new Date();
-  if (date.toString() === "Invalid Date") {
-    console.log(dateInput);
-    return { table: "Invalid Date" };
-  }
-  date = date.setFullYear(year);
-
-  return {
-    id, table, name, date, amount
-  };
-}
-
-function getForMonth(transactions, month) {
-  return transactions.reduce((cumm, curr) => {
-    const d = new Date(curr.date).getMonth();
-    if (d === month) {
-      cumm[TABLE_IX[curr.table]].push(curr);
-    }
-    return cumm;
-  }, [[], [], []]);
-}
-
-function cussyReducer(state, { type, ...values }) {
-  switch (type) {
-    case 'new':
-      return cussyInit(values.name, values.year);
-    case 'colorTheme':
-      return {
-        ...state,
-        colorTheme: values.colorTheme
-      };
-    case 'currency':
-      return {
-        ...state,
-        currency: values.currency
-      };
-
-    case 'addTrx': {
-      const { table, name, dateInput, amount } = values;
-      const trxNew = trxMake(
-        state.transactions, state.year, table, name, dateInput, amount);
-
-      if (trxNew.table === "Invalid Date") {
-        return {
-          ...state,
-          alertMessage: "Invalid date"
-        };
-      }
-
-      const updated = [...state.transactions, trxNew];
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
-      return {
-        ...state,
-        transactions: updated,
-        totalsTrx: meta
-      };
-    }
-    case 'addManyTrx': {
-      const toAdd = values.many.map(
-        ({ table, name, dateInput, amount }) =>
-          trxMake(state.transactions, state.year, table, name, dateInput, amount));
-
-      toAdd.forEach((trx, ix) => {
-        trx.id = trx.id + ix;
-      });
-
-      const updated = [...state.transactions, ...toAdd];
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
-      return {
-        ...state,
-        transactions: updated,
-        totalsTrx: meta
-      };
-    }
-    case 'removeTrx': {
-      const updated = state.transactions.filter(trx => trx.id !== values.id);
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
-      return {
-        ...state,
-        transactions: updated,
-        totalsTrx: meta
-      };
-    }
-
-    case 'addTemplate': {
-      const { table, name, amount } = values;
-      const updated = [...state.template, { table, name, amount }];
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
-      return {
-        ...state,
-        template: updated,
-        totalsTemplate: meta
-      };
-    }
-    case 'addManyTemplate': {
-      const normed = values.many.map(
-        ({ table, name, amount }) => ({
-          table: TABLES[TABLE_IX[table]], name, amount
-        })
-      );
-      const updated = [...state.template, ...normed];
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
-      return {
-        ...state,
-        template: updated,
-        totalsTemplate: meta
-      };
-    }
-    case 'removeTemplate': {
-      const updated = state.transactions.filter(trx => trx.name !== values.name);
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
-      return {
-        ...state,
-        transactions: updated,
-        totalsTrx: meta
-      };
-    }
-    case 'clearAlert':
-      return {
-        ...state,
-        alertMessage: ''
-      };
-  }
-  throw Error('Unknown action: ' + type);
-}
 
 // helper function
 function swapColorTheme(colorTheme) {
