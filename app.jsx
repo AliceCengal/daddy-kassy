@@ -1,74 +1,103 @@
-/** @jsx preact.h */
+/** @jsx h */
 
-var React = {
+var h = preact.h
+
+const React = {
   ...preact,
   ...preactHooks,
 };
 
 const TODAY = new Date();
-const VERSION = 3.0;
+const VERSION = 4.0;
 const ENTER_KEY = 13;
+const SECTIONS = [
+  'Spreadsheet', 'New', 'Load', 'Save', 'Help', 'About'
+]
 
-function App(props) {
+const dateFmt = TODAY.toLocaleDateString()
+  .split(/[-./]/g)
+  .filter((a) => a < 32) // remove year, keep date and month
+  .join(TODAY.toLocaleDateString().match(/[-./]/g)[0])
+
+const AppCtx = React.createContext(null);
+
+function App() {
   const [currentPage, setPage] = React.useState(
     window.location.hash.slice(1) || 'about');
-  const [colorTheme, setColorTheme] = React.useState('deep-purple');
-  const [account, setAccount] = React.useState(new AccountDatabase('You', 2022))
+
+  const [state, dispatch] = React.useReducer(cussyReducer, null, cussyInit);
+  console.log(state)
+  React.useEffect(() => {
+    if (state.alertMessage) {
+      alert(state.alertMessage)
+      dispatch({ type: 'clearAlert' })
+    }
+  }, [state.alertMessage])
+
+  React.useEffect(() => {
+    swapColorTheme(state.colorTheme);
+  }, [state.colorTheme])
 
   React.useEffect(() => {
     window.addEventListener("hashchange", handleHashChange);
-
-    return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
   function handleHashChange(e) { setPage(window.location.hash.slice(1)) }
 
-  return <React.Fragment>
+  return <AppCtx.Provider value={{ state, dispatch }}>
     <Navbar />
     {(currentPage === 'about' ? <AboutPage /> : null)}
     {(currentPage === 'help' ? <HelpPage /> : null)}
-    {(currentPage === 'load' ?
-      <LoadPage setAccount={setAccount} /> : null)}
-    {(currentPage === 'save' ?
-      <DownloadPage account={account} /> : null)}
-    {(currentPage === 'new' ?
-      <NewPage setAccount={setAccount} color={colorTheme} setColor={setColorTheme} /> : null)}
-    {(currentPage === 'spreadsheet' ?
-      <SpreadsheetPage account={account} setAccount={setAccount} /> : null)}
-  </React.Fragment>
+    {(currentPage === 'load' ? <LoadPage /> : null)}
+    {(currentPage === 'save' ? <DownloadPage /> : null)}
+    {(currentPage === 'new' ? <NewPage /> : null)}
+    {(currentPage === 'spreadsheet' ? <SpreadsheetPage /> : null)}
+  </AppCtx.Provider>
 }
 
 function NavbarLink({ label }) {
-  const hash = window.location.hash.slice(1);
+  const hash = window.location.hash.slice(1) || 'about';
   return <button
     disabled={hash === label.toLowerCase()}
-    className='btn btn-secondary'
+    className='btn btn-light w3-text-theme'
     onClick={() => window.location.hash = label.toLowerCase()}>
     {label}
   </button>
 }
 
 function Navbar(props) {
-  return (
-    <header className='d-flex flex-row w-100 w3-theme-l1 
-        justify-content-between align-items-center p-3 shadow'>
-      <h1>Daddy Cussy</h1>
-      <nav className='btn-group border border-light border-3 rounded'>
-        <NavbarLink label='Spreadsheet' />
-        <NavbarLink label='New' />
-        <NavbarLink label='Load' />
-        <NavbarLink label='Save' />
-        <NavbarLink label='Help' />
-        <NavbarLink label='About' />
-      </nav>
-      <div style={{ "fontSize": 'small', "textAlign": 'right' }}>
+
+  const [drawer, openDrawer] = React.useState(false);
+
+  const LinkBar = (
+    <nav className='btn-group'>
+      {SECTIONS.map(s => <NavbarLink label={s} />)}
+    </nav>
+  )
+
+  return (<React.Fragment>
+    <header className='w3-theme-l1 p-2 shadow d-none d-md-flex'>
+      <div className="h1 m-0">Daddy&nbsp;Cussy</div>
+      {LinkBar}
+      <div className="copyright">
         site design and logo<br />
-        &copy; Athran Zuhail 2022 all rights reserved</div>
-    </header>)
+        &copy; Athran Zuhail 2022 all&nbsp;rights&nbsp;reserved
+      </div>
+    </header>
+    <header className='w3-theme-l1 p-2 shadow d-flex d-md-none'>
+      <span className='h2 m-0'>Daddy Cussy</span>
+      <div className='hamburger d-inline-block'>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+    </header>
+  </React.Fragment>
+  )
 }
 
-function AboutPage(props) {
-  return (<main className='reading-box mx-auto pt-4'>
+function AboutPage() {
+  return (<main className='reading-box'>
     <h1 className='w3-text-theme'>About this app</h1>
     <p>This is an app for tracking and analyzing simple personal income, expense,
       and investment. The target audience is an average working adult.</p>
@@ -84,8 +113,8 @@ function AboutPage(props) {
   </main>)
 }
 
-function HelpPage(props) {
-  return (<main className='w-100 pt-4'><div className='reading-box mx-auto mb-5'>
+function HelpPage() {
+  return (<main className='reading-box'>
     <h1 className='w3-text-theme'>Help for you</h1>
     <h4>Q: How do I edit or delete an entry?</h4>
     <p>A: DOUBLE-CLICK the row that you want to edit or delete. That row will be deleted
@@ -220,18 +249,20 @@ function HelpPage(props) {
     <h4>Q: How do I transition to the next financial year?</h4>
     <p>A: On the New page, type your current Gross Worth into the Starting Balance field,
       and your current total Obligation into the Starting Obligation field.</p>
-  </div></main>)
+  </main>)
 }
 
-function LoadPage({ setAccount }) {
+function LoadPage() {
+  const { state, dispatch } = React.useContext(AppCtx)
   const [tempAccount, setTempAccount] = React.useState(null);
 
   const storedAccount = [];
+  /* 
   for (var i = 0; i < localStorage.length; i++) {
     if (localStorage.key(i).startsWith('account-'))
       storedAccount.push(localStorage.key(i));
   }
-
+ */
   function choosenFile(e) {
     let fr = new FileReader();
     fr.onload = function () {
@@ -248,8 +279,7 @@ function LoadPage({ setAccount }) {
   }
 
   function chooseAccount(e) {
-    // create the DB object
-    setAccount(accountDatabaseFromFile(tempAccount));
+    actionsFromFile(tempAccount).forEach(dispatch)
     window.location.hash = 'spreadsheet'
   }
 
@@ -266,7 +296,7 @@ function LoadPage({ setAccount }) {
       <p>Make sure you have saved/downloaded any active spreadsheet,
         because loading a new one will overwrite the current one.</p>
       {tempAccount === null ?
-        <button className='btn btn-primary' disabled>LOAD</button>
+        <button className='btn btn-secondary' disabled>LOAD</button>
         : <button className='btn btn-primary' onClick={chooseAccount}>
           LOAD {tempAccount.name}, {tempAccount.year}
         </button>}
@@ -283,55 +313,27 @@ function LoadPage({ setAccount }) {
     </Card>
   )
 
-  return (<main className='reading-box mx-auto pt-4 container'>
-    <div className='row mb-3'>
-      <h1 className='w3-text-theme col text-center'>
-        Load a previously saved spreadsheet
-      </h1>
-    </div>
-    <div className='row gx-3'>
-      <div className='col'>
-        {LoadFromFile}
-      </div>
-      <div className='col'>
-        {LoadFromStorage}
-      </div>
+  return (<main className='reading-box'>
+    <h1 className='w3-text-theme text-center'>
+      Load a previously saved spreadsheet
+    </h1>
+    <div className='row g-3 my-3'>
+      <div className='col-12 col-md-6'>{LoadFromFile}</div>
+      <div className='col-12 col-md-6'>{LoadFromStorage}</div>
     </div>
   </main>)
 }
 
-function DownloadPage({ account }) {
+function DownloadPage() {
   const [danger, setDanger] = React.useState(
     localStorage.getItem('danger') || ''
   )
-
-  // Function to download data to a file
-  // https://stackoverflow.com/questions/13405129/javascript-create-and-save-file
-  // use type : 'application/json'
-  function download(data, filename, type) {
-    var file = new Blob([data], { type: type });
-    if (window.navigator.msSaveOrOpenBlob) // IE10+
-      window.navigator.msSaveOrOpenBlob(file, filename);
-    else { // Others
-      let a = document.createElement("a");
-      let url = URL.createObjectURL(file);
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function () {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      }, 0);
-    }
-  }
 
   function downloadAccount() {
     if (account !== null)
       download(
         JSON.stringify(account),
-        account.name + '-' + account.year,
-        'application/json'
+        account.name + '-' + account.year
       )
     else alert("Create an account first.")
   }
@@ -345,7 +347,7 @@ function DownloadPage({ account }) {
     } else alert("Create an account first.")
   }
 
-  return (<main className='reading-box mx-auto pt-4'>
+  return (<main className='reading-box'>
     <h1 className='w3-text-theme'>Download the spreadsheet</h1>
     <p>The app will download the data you had entered into a file. This file is
       not encrypted or obfuscated in any way, it's just structured into JSON.
@@ -381,63 +383,49 @@ function DownloadPage({ account }) {
 }
 
 function PopoutTooltip({ children }) {
-  return <div className='col-1 mytooltip'>
-    &#x1F6C8;
-    <span className='w3-theme-l1 mytooltiptext mttt-right'>
-      {children}
-    </span>
-  </div>
+  return (<div className='col-1'>
+    <div className='mytooltip'> &#x1F6C8; </div>
+    <p className='w3-theme-l1 mytooltiptext mttt-right'> {children} </p>
+  </div>)
 }
 
-function NewPage({ setAccount }) {
-  const dateFmt = TODAY.toLocaleDateString()
-    .split(/[-./]/g)
-    .filter((a) => a < 32) // remove year, keep date and month
-    .join(TODAY.toLocaleDateString().match(/[-./]/g)[0])
+function NewPage() {
+  const { state, dispatch } = React.useContext(AppCtx);
 
   function submit(e) {
     e.preventDefault()
-    const formData =
-      Object.fromEntries(
-        new FormData(e.target));
-    const account = accountDatabaseFromFile(formData);
+    const formData = Object.fromEntries(new FormData(e.target));
+    dispatch({ type: 'new', name: formData.name, year: formData.year });
 
     if (formData.startingBalance) {
       const startingDate = new Date()
       startingDate.setFullYear(
-        account.year,
-        (formData.startingMonth || '0') - 1,
+        formData.year,
+        formData.startingMonth - 1,
         1
       );
 
-      account.addTransaction(
-        startingDate.toLocaleDateString(),
-        'Starting balance',
-        account.INCOME,
-        formData.startingBalance)
+      dispatch({
+        type: 'addTrx',
+        dateInput: startingDate.toLocaleDateString(),
+        name: 'Starting balance',
+        table: 'income',
+        amount: Number(formData.startingBalance)
+      })
     }
-    console.log(formData)
-    console.log(account);
-    setAccount(account);
+
     window.location.hash = 'spreadsheet'
   }
 
-  function swapColorTheme(colorTheme) {
-    const style = document.getElementById("w3-theme-color");
-    if (colorTheme === "none") {
-      style.href = ''
-    } else {
-      style.href = `https://www.w3schools.com/lib/w3-theme-${colorTheme}.css`
-    }
+  function sendColorTheme(ct) {
+    dispatch({ type: 'colorTheme', colorTheme: ct })
   }
 
-  return (<main className='w-100 pt-4'>
-    <div className='reading-box mx-auto'>
-      <h1 className='w3-text-theme'>Create new spreadsheet</h1>
-      <p>Make sure you have saved/downloaded any active spreadsheet,
-        because creating a new one will overwrite the current one.</p>
-    </div>
-    <form className='container reading-box' onSubmit={submit} >
+  return (<main className='reading-box'>
+    <h1 className='w3-text-theme'>Create new spreadsheet</h1>
+    <p>Make sure you have saved/downloaded any active spreadsheet,
+      because creating a new one will overwrite the current one.</p>
+    <form onSubmit={submit} >
       <div className='row mb-3 align-items-center'>
         <div className='col-4'>Name</div>
         <div className='col'>
@@ -445,11 +433,12 @@ function NewPage({ setAccount }) {
             defaultValue='You' name='name' />
         </div>
         <PopoutTooltip>
-          Who or what this account is about. It could be a person,
-          a legal entity (a married couple, a trust),
-          an organization (school club, neighbourhood watch),
-          an activity (wedding, party),
-          or a business.
+          Who or what this account is about. It could be: <br />
+          - a person,<br />
+          - a legal entity (a married couple, a trust),<br />
+          - an organization (school club, neighbourhood watch),<br />
+          - an activity (wedding, party),<br />
+          - a business.
         </PopoutTooltip>
       </div>
       <div className='row mb-3 align-items-center'>
@@ -497,7 +486,7 @@ function NewPage({ setAccount }) {
         <div className='col-4'>Starting month</div>
         <div className='col'>
           <input type='number' className='form-control'
-            placeholder='optional' name='startingMonth'
+            defaultValue={1} name='startingMonth'
             min='1' max='12' />
         </div>
         <PopoutTooltip>
@@ -519,8 +508,8 @@ function NewPage({ setAccount }) {
       <div className='row mb-3 align-items-center'>
         <div className='col-4'>Color theme</div>
         <div className='col-7'>
-          <select name='colorTheme' className='form-control' defaultValue='deep-purple'
-            onChange={(e) => swapColorTheme(e.target.value)} >
+          <select name='colorTheme' className='form-control' value={state.colorTheme}
+            onChange={(e) => sendColorTheme(e.target.value)} >
             {['Red', 'Pink', 'Purple', 'Deep Purple', 'Indigo', 'Blue', 'Light Blue', 'Cyan',
               'Teal', 'Green', 'Light Green', 'Lime', 'Khaki', 'Yellow', 'Amber', 'Orange',
               'Deep Orange', 'Blue Grey', 'Brown', 'Grey', 'Dark Grey', 'Black', 'None'
@@ -544,18 +533,17 @@ function Card({ className, children }) {
   </div>
 }
 
-function SpreadsheetPage({ account, setAccount }) {
+function SpreadsheetPage() {
+  const { state, dispatch } = React.useContext(AppCtx);
   const [openGadget, setOpenGadget] = React.useState('')
-
-  account.calculateMeta()
 
   const TitleBox = (
     <Card className='d-flex justify-content-between align-items-center p-3'>
       <h4 className='w3-text-theme d-inline-block m-0'>
-        {`${account.name} ${account.year}`}
+        {`${state.name} ${state.year}`}
       </h4>
-      <div className='mytooltip'>
-        <span className='py-3'>gadgets</span>
+      <div>
+        <span className='mytooltip'>gadgets</span>
         <div className='mytooltiptext mttt-below d-flex flex-column align-items-end'>
           <button className='btn btn-secondary w-100'>timeline</button>
           <button className='btn btn-secondary'>proportion</button>
@@ -565,35 +553,46 @@ function SpreadsheetPage({ account, setAccount }) {
     </Card>
   )
 
-  return (<main className='pt-3 w-100'><div className='container'>
-    <div className='row mb-3 gx-3'>
-      <div className='col'>
-        {TitleBox}
-      </div>
-      <div className='col'>
-        <div className='d-flex flex-row justify-content-between align-items-center p-3'>
-          <div></div><span>gross worth</span>
-          <span className="text-code">
-            {account.currency} {account.meta.grossworth.toFixed(2)}
-          </span>
-        </div>
-      </div>
-      <div className='col'>
-        <div className='d-flex flex-row justify-content-between align-items-center p-3'>
-          <div></div><span>net worth</span>
-          <span className="text-code">
-            {account.currency} {account.meta.networth.toFixed(2)}
-          </span>
-        </div></div>
+  const GrossWorthBox = (
+    <div className='d-flex flex-row justify-content-between align-items-center p-3'>
+      <div></div><span>gross worth</span>
+      <span className="text-code">
+        {state.currency} {(state.totalsTrx[0] - state.totalsTrx[1]).toFixed(2)}
+      </span>
     </div>
-    <div className='row mb-3 gx-3'>
-      <TableTop account={account} table='income' />
-      <TableTop account={account} table='expense' />
-      <TableTop account={account} table='obligation' />
+  )
+
+  const NetWorthBox = (
+    <div className='d-flex flex-row justify-content-between align-items-center p-3'>
+      <div></div><span>net worth</span>
+      <span className="text-code">
+        {state.currency} {(
+          state.totalsTrx[0] - state.totalsTrx[1] + state.totalsTrx[2]
+        ).toFixed(2)}
+      </span>
     </div>
-    {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((month) =>
-      <MonthTable account={account} month={month} />
-    )}
+  )
+
+  return (<main><div className='container'>
+    <div className='row row-cols-3 g-3'>
+      <div className='col-12 col-md-4'>{TitleBox}</div>
+      <div className='col-6 col-md-4'>{GrossWorthBox}</div>
+      <div className='col-6 col-md-4'>{NetWorthBox}</div>
+
+      <div className="btn-group d-md-none col-12">
+        <button className="btn btn-secondary">INCOME</button>
+        <button className="btn btn-secondary">EXPENSE</button>
+        <button className="btn btn-secondary">OBLIGATION</button>
+      </div>
+
+      <div className='col-lg-4 col-xs-12'><TableTop table='income' /></div>
+      <div className='col-lg-4 col-xs-12'><TableTop table='expense' /></div>
+      <div className='col-lg-4 col-xs-12'><TableTop table='obligation' /></div>
+
+      {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((month) =>
+        <MonthTable month={month} />
+      )}
+    </div>
   </div></main>)
 }
 
@@ -656,305 +655,310 @@ function Template(props) {
   </div>
 }
 
-function TableTop({ account, table }) {
-  return <div className='col-lg-4 col-xs-12'>
+function TableTop({ table }) {
+  const { state, dispatch } = React.useContext(AppCtx);
+  const dateRef = React.useRef(null)
+  const nameRef = React.useRef(null)
+  const amountRef = React.useRef(null)
+
+  function addTrx(e) {
+    if (e.which === ENTER_KEY) {
+      dispatch({
+        type: 'addTrx',
+        table,
+        name: nameRef.current.value,
+        dateInput: dateRef.current.value,
+        amount: Number(amountRef.current.value || 0.0)
+      })
+    }
+  }
+
+  return (
     <Card className='sheet-table p-2'>
       <span></span><span className='text-center'>{table.toUpperCase()}</span>
       <span className='text-code'>
-        {account.currency} {account.meta['total' + table].toFixed(2)}
+        {state.currency} {state.totalsTrx[tableIx(table)].toFixed(2)}
       </span>
       <span>Date</span><span className='text-center'>Detail</span><span>Amount</span>
-      <input size='1' /><input /><input size='1' />
+      <input ref={dateRef} onKeyUp={addTrx} size='1' />
+      <input ref={nameRef} onKeyUp={addTrx} />
+      <input ref={amountRef} onKeyUp={addTrx} size='1' />
     </Card>
-  </div>
+  )
 }
 
-function MonthTable(props) {
-  const trxs2 = props.account.getForMonth(props.month)
+function MonthTable({ month }) {
+  const { state, dispatch } = React.useContext(AppCtx);
+  const [inc, exp, obl] = getForMonth(state.transactions, month)
 
-  if (trxs2[0].length == 0 && trxs2[1].length == 0 && trxs2[2].length == 0)
+  if (inc.length == 0 && exp.length == 0 && obl.length == 0)
     return null;
-  else return <div className='row mb-3 gx-3'>
+  else return [
     <div className='col'><div className='sheet-table shadow-sm bg-white p-2'>
-      {trxs2[0].map(trx =>
-        <React.Fragment>
-          <span>{props.account.getDateString(trx)}</span>
+      {inc.map(trx =>
+        <React.Fragment key={trx.id}>
+          <span>{(new Date(trx.date)).getDate()}</span>
           <span>{trx.name}</span>
-          <span className="text-code">{Number(trx.amount).toFixed(2)}</span>
+          <span className="text-code">{trx.amount.toFixed(2)}</span>
+        </React.Fragment>
+      )}
+    </div></div>,
+    <div className='col'><div className='sheet-table shadow-sm bg-white p-2'>
+      {exp.map(trx =>
+        <React.Fragment key={trx.id}>
+          <span>{(new Date(trx.date)).getDate()}</span>
+          <span>{trx.name}</span>
+          <span className="text-code">{trx.amount.toFixed(2)}</span>
+        </React.Fragment>
+      )}
+    </div></div>,
+    <div className='col'><div className='sheet-table shadow-sm bg-white p-2'>
+      {obl.map(trx =>
+        <React.Fragment key={trx.id}>
+          <span>{(new Date(trx.date)).getDate()}</span>
+          <span>{trx.name}</span>
+          <span className="text-code">{trx.amount.toFixed(2)}</span>
         </React.Fragment>
       )}
     </div></div>
-    <div className='col'><div className='sheet-table shadow-sm bg-white p-2'>
-      {trxs2[1].map(trx =>
-        <React.Fragment>
-          <span>{props.account.getDateString(trx)}</span>
-          <span>{trx.name}</span>
-          <span className="text-code">{Number(trx.amount).toFixed(2)}</span>
-        </React.Fragment>
-      )}
-    </div></div>
-    <div className='col'><div className='sheet-table shadow-sm bg-white p-2'>
-      {trxs2[2].map(trx =>
-        <React.Fragment>
-          <span>{props.account.getDateString(trx)}</span>
-          <span>{trx.name}</span>
-          <span className="text-code">{Number(trx.amount).toFixed(2)}</span>
-        </React.Fragment>
-      )}
-    </div></div>
-  </div>
+  ]
 }
 
-function AccountDatabase(name, year) {
-  this.name = name;
-  this.year = year;
-  this.version = VERSION;
-  this.template = [];
-  this.transactions = [];
-  this.currency = "";
-  this.colorTheme = "deep-purple";
-
-  this.meta = {
-    totalincome: 0.0,
-    totalexpense: 0.0,
-    totalobligation: 0.0,
-    grossworth: 0.0,
-    networth: 0.0
+function cussyInit(name, year) {
+  return {
+    version: VERSION,
+    name: name || 'You',
+    year: year || 2022,
+    currency: '',
+    colorTheme: 'deep-purple',
+    template: [],
+    transactions: [],
+    totalsTemplate: [0.0, 0.0, 0.0],
+    totalsTrx: [0.0, 0.0, 0.0],
+    alertMessage: '',
   }
+}
 
-  this.INCOME = "INCOME";
-  this.MONTHLY = "MONTHLY";
-  this.YEARLY = "YEARLY";
+function actionsFromFile(temp) {
+  return [
+    { type: 'new', name: temp.name, year: temp.year },
 
-  this.TYPE_INCOME = "income";
-  this.TYPE_EXPENSE = "expense";
-  this.TYPE_OBLIGATION = "obligation";
+    (temp.colorTheme ?
+      { type: 'colorTheme', colorTheme: temp.colorTheme } : null),
 
-  this.TYPES = [this.TYPE_INCOME, this.TYPE_EXPENSE, this.TYPE_OBLIGATION];
+    (temp.currency ?
+      { type: 'currency', currency: temp.currency } : null),
 
-  this.addTemplate = function (trxType, name, amount) {
-    this.template.push({ trxType: trxType, name: name, amount: amount });
-  };
+    {
+      type: 'addManyTrx', many: temp.transactions.map(
+        ({ type, table, name, date, amount }) => (
+          { table: (type.toLowerCase() || table), name, dateInput: date, amount: Number(amount) }
+        )
+      )
+    },
 
-  this.deleteTemplate = function (name) {
-    this.template = this.template.filter(
-      function (a) { return a.name !== name; });
-  };
+    {
+      type: 'addManyTemplate', many: temp.template.map(
+        ({ trxType, table, name, amount }) => (
+          { table: (trxType.toLowerCase() || table), name, amount: Number(amount) }
+        )
+      )
+    },
+  ].filter(Boolean)
+}
 
-  this.addTransaction = function (dateInput, name, type, amount) {
-    // Get the highest id in the database, then the newly added trx 
-    // would plus one that id.
-    let frontid;
-    if (this.transactions.length == 0) {
-      frontid = 0;
-    } else {
-      frontid = this.transactions.map(a => a.id).reduce((a, b) => Math.max(a, b));
+const TABLES = ['income', 'expense', 'obligation']
+
+const TABLE_IX = {
+  'income': 0,
+  'expense': 1, 'monthly': 1,
+  'obligation': 2, 'yearly': 2,
+}
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+]
+
+function tableIx(tbl) { return TABLE_IX[tbl] }
+
+function trxReducer(prev, curr) {
+  prev[TABLE_IX[curr.table]] += curr.amount;
+  return prev
+}
+
+function trxMake(list, year, table, name, dateInput, amount) {
+  const id = list.reduce(
+    (a, b) => Math.max(a, b.id)
+    , 0);
+
+  let date = (dateInput ? new Date(dateInput) : new Date());
+  if (date.toString() === "Invalid Date") {
+    console.log(dateInput);
+    return { table: "Invalid Date" };
+  }
+  date = date.setFullYear(year);
+
+  return { id, table, name, date, amount }
+}
+
+function getForMonth(transactions, month) {
+  return transactions.reduce((cumm, curr) => {
+    const d = (new Date(curr.date)).getMonth();
+    if (d === month) { cumm[TABLE_IX[curr.table]].push(curr); }
+    return cumm;
+  }, [[], [], []])
+}
+
+function cussyReducer(state, { type, ...values }) {
+  switch (type) {
+    case 'new': return cussyInit(
+      values.name, values.year
+    );
+    case 'colorTheme': {
+      return {
+        ...state, colorTheme: values.colorTheme
+      };
+    }
+    case 'currency': return {
+      ...state, currency: values.currency
     }
 
-    let date = new Date(dateInput);
-    if (date.toString() === "Invalid Date") {
-      alert("Invalid Date Format");
-      return console.log(dateInput);
-    }
+    case 'addTrx': {
+      const { table, name, dateInput, amount } = values
 
-    let trx = {
-      id: (frontid + 1),
-      date: date.setFullYear(this.year),
-      name: name,
-      type: type,
-      amount: amount
-    };
-
-    // insertion sort by date
-    let ix = this.transactions.findIndex((t) => trx.date > t.date);
-    if (ix === -1) this.transactions.push(trx)
-    else this.transactions.splice(ix, 0, trx);
-  };
-
-  this.getTypeForMonth = function (type, month) {
-    return this.transactions.filter(function (a) {
-      let d = new Date(a.date);
-      return d.getMonth() === month && a.type === type;
-    });
-  };
-
-  this.getForMonth = function (month) {
-    return this.transactions.reduce((cumm, curr) => {
-      const d = (new Date(curr.date)).getMonth();
-      if (d === month) {
-        if (curr.type === 'income') {
-          cumm[0].push(curr)
-        } else if (curr.type === 'expense') {
-          cumm[1].push(curr)
-        } else if (curr.type === 'obligation') {
-          cumm[2].push(curr)
+      const trxNew = trxMake(
+        state.transactions, state.year, table, name, dateInput, amount
+      )
+      if (trxNew.table === "Invalid Date") {
+        return {
+          ...state,
+          alertMessage: "Invalid date"
         }
-      } return cumm;
-    }, [[], [], []])
-  }
-
-  this.isThisMonthTrx = function (month) {
-    return this.transactions.filter(function (a) {
-      return new Date(a.date).getMonth() === month;
-    }).length;
-  };
-
-  this.recordedMonths = function () {
-    let months = this.transactions.map(t => (new Date(t.date).getMonth()));
-    return months.filter((t, ix) => months.indexOf(t) == ix);
-  }
-
-  this.deleteTrx = function (id) {
-    this.transactions = this.transactions.filter(function (a) { return a.id !== id; });
-  };
-
-  this.getDateString = function (trx) {
-    let d = new Date(trx.date);
-    return d.toLocaleDateString()
-      .split(/[-./]/g)
-      .filter((a) => a < 32)
-      .join(d.toLocaleDateString().match(/[-./]/g)[0]);
-  };
-
-  this.calculateWorthByDay = function () {
-    let wbd = Array(365).fill([0, 0, 0, 0]);
-    let dateIter = new Date();
-    dateIter.setFullYear(this.year, 0, 1);
-    let trxIter = Array.from(this.transactions).reverse();
-    //console.log(trxIter.length);
-    wbd.forEach(function (curr, ix, arr) {
-      //console.log(ix + " : " + dateIter.toLocaleDateString());
-
-      let grossworth = 0;
-      let networth = 0;
-      while (trxIter.length > 0) {
-        //console.log(trxIter[0]);
-        let d = new Date(trxIter[0].date);
-        if (d.toDateString() === dateIter.toDateString()) {
-          let trx = trxIter.shift();
-          if (trx.type === "expense") {
-            grossworth -= Number(trx.amount);
-            networth -= Number(trx.amount);
-          } else if (trx.type === "income") {
-            grossworth += Number(trx.amount);
-            networth += Number(trx.amount);
-          } else if (trx.type === "obligation") {
-            networth += Number(trx.amount);
-          }
-        } else break;
       }
 
-      arr[ix] = [
-        grossworth,
-        networth,
-        dateIter.getMonth(),
-        dateIter.toLocaleDateString()];
-
-      if (ix !== 0) {
-        arr[ix][0] += arr[ix - 1][0];
-        arr[ix][1] += arr[ix - 1][1];
+      const updated = [
+        ...state.transactions,
+        trxNew
+      ]
+      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0])
+      return {
+        ...state,
+        transactions: updated,
+        totalsTrx: meta,
       }
-      dateIter.setDate(dateIter.getDate() + 1);
-    });
+    }
+    case 'addManyTrx': {
+      const toAdd = values.many.map(
+        ({ table, name, dateInput, amount }) =>
+          trxMake(
+            state.transactions, state.year, table, name, dateInput, amount
+          )
+      )
+      toAdd.forEach((trx, ix) => {
+        trx.id = trx.id + ix;
+      })
 
-    return wbd;
-  };
-
-  this.calculateMeta = function () {
-    const meta = this.transactions.reduce((cumm, curr) => {
-      if (curr.type === 'income') {
-        cumm[0] += Number(curr.amount);
-      } else if (curr.type === 'expense') {
-        cumm[1] += Number(curr.amount);
-      } else if (curr.type === 'obligation') {
-        cumm[2] += Number(curr.amount);
+      const updated = [
+        ...state.transactions,
+        ...toAdd
+      ]
+      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0])
+      return {
+        ...state,
+        transactions: updated,
+        totalsTrx: meta,
       }
-      return cumm;
-    }, [0, 0, 0]);
+    }
+    case 'removeTrx': {
+      const updated = state.transactions.filter(
+        trx => trx.id !== values.id
+      )
+      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0])
+      return {
+        ...state,
+        transactions: updated,
+        totalsTrx: meta,
+      }
+    }
 
+    case 'addTemplate': {
+      const { table, name, amount } = values
+      const updated = [
+        ...state.template,
+        { table, name, amount }
+      ]
+      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0])
+      return {
+        ...state,
+        template: updated,
+        totalsTemplate: meta,
+      }
+    }
+    case 'addManyTemplate': {
+      const normed = values.many.map(
+        ({ table, name, amount }) => ({
+          table: TABLES[TABLE_IX[table]], name, amount
+        })
+      )
+      const updated = [
+        ...state.template,
+        ...normed
+      ]
+      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0])
+      return {
+        ...state,
+        template: updated,
+        totalsTemplate: meta,
+      }
+    }
+    case 'removeTemplate': {
+      const updated = state.transactions.filter(
+        trx => trx.name !== values.name
+      )
+      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0])
+      return {
+        ...state,
+        transactions: updated,
+        totalsTrx: meta,
+      }
+    }
 
-    this.meta = {
-      totalincome: meta[0],
-      totalexpense: meta[1],
-      totalobligation: meta[2],
-      grossworth: meta[0] - meta[1],
-      networth: meta[0] - meta[1] + meta[2]
+    case 'clearAlert': return {
+      ...state,
+      alertMessage: ''
     }
   }
-}
-function accountDatabaseFromFile(o) {
-  if (typeof o.version == 'undefined' || o.version < VERSION)
-    return legacyImport(o);
-
-  // version 3.0
-  let accountDB = new AccountDatabase(o.name, o.year);
-  if (typeof (o.currency) !== 'undefined') accountDB.currency = o.currency;
-  if (typeof (o.colorTheme) !== 'undefined') accountDB.colorTheme = o.colorTheme;
-
-  if (o.template) o.template.forEach(function (curr) {
-    accountDB.addTemplate(curr.trxType, curr.name, curr.amount);
-  });
-
-  if (o.transactions) o.transactions.forEach(function (curr) {
-    accountDB.addTransaction(
-      curr.date,
-      curr.name,
-      curr.type,
-      curr.amount);
-  });
-  return accountDB;
+  throw Error('Unknown action: ' + type);
 }
 
-function legacyImport(o) {
-  if (o.version === 2.0)
-    return legacyImportTwo(o);
-
-  return legacyImportOne(o);
+// helper function
+function swapColorTheme(colorTheme) {
+  const style = document.getElementById("w3-theme-color");
+  if (colorTheme === "none") {
+    style.href = ''
+  } else {
+    style.href = `https://www.w3schools.com/lib/w3-theme-${colorTheme}.css`
+  }
 }
 
-function legacyImportTwo(o) {
-  let accountDB = new AccountDatabase(o.name, o.year);
-  if (typeof (o.currency) !== 'undefined') accountDB.currency = o.currency;
-  if (typeof (o.colorTheme) !== 'undefined') accountDB.colorTheme = o.colorTheme;
-
-  o.template_monthly.forEach(function (curr) {
-    accountDB.addTemplate(accountDB.MONTHLY, curr.name, curr.amount);
-  });
-
-  o.template_yearly.forEach(function (curr) {
-    accountDB.addTemplate(accountDB.YEARLY, curr.name, curr.amount);
-  });
-
-  o.transactions.forEach(function (curr) {
-    accountDB.addTransaction(
-      curr.date,
-      curr.name,
-      curr.type,
-      curr.amount);
-  });
-  return accountDB;
-}
-
-function legacyImportOne(o) {
-  // version 1.0
-  let accountDB = new AccountDatabase(o.name, o.year);
-  if (typeof (o.currency) !== 'undefined') accountDB.currency = o.currency;
-  if (typeof (o.colorTheme) !== 'undefined') accountDB.colorTheme = o.colorTheme;
-
-  o.template_monthly.forEach(function (curr) {
-    accountDB.addTemplate(accountDB.MONTHLY, curr.name, curr.amount);
-  });
-
-  o.template_yearly.forEach(function (curr) {
-    accountDB.addTemplate(accountDB.YEARLY, curr.name, curr.amount);
-  });
-
-  o.transactions.forEach(function (curr) {
-    accountDB.addTransaction(
-      curr.date * 1000,
-      curr.name,
-      curr.type,
-      curr.amount);
-  });
-  return accountDB;
+// Function to download data to a file
+// https://stackoverflow.com/questions/13405129/javascript-create-and-save-file
+// use type : 'application/json'
+function download(data, filename, type = 'application/json') {
+  var file = new Blob([data], { type: type });
+  if (window.navigator.msSaveOrOpenBlob) // IE10+
+    window.navigator.msSaveOrOpenBlob(file, filename);
+  else { // Others
+    let a = document.createElement("a");
+    let url = URL.createObjectURL(file);
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 0);
+  }
 }
