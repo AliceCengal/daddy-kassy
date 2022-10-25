@@ -66,6 +66,7 @@
       opacity: 0;
       position: absolute;
       z-index: 1;
+      pointer-events: none;
       transition: opacity 0.5s;
     }
 
@@ -83,12 +84,25 @@
       border-radius: 1rem;
       top: 150%;
       right: 100%;
-      pointer-events: none;
     }
-    
-    .mttt-below {
+
+    .float-menu {
+      position: absolute;
+      visibility: hidden;
       top: 100%;
-      right: 0px;
+      right: 0;
+    }
+
+    .float-menu:hover, *:hover + .float-menu {
+      visibility: visible;
+    }
+
+    *:has(+ .float-menu) {
+      padding: 1rem;
+    }
+
+    *:has(> .float-menu) {
+      position: relative;
     }
 
     .sheet-table {

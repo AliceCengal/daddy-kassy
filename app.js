@@ -376,13 +376,13 @@ function Card(props) {
 
 const SheetStyle = {
   main: { style: { maxWidth: '80rem', margin: 'auto' } },
-  titleBox: { class: "d-flex justify-content-between align-items-center p-3" },
-  title: { class: "w3-text-theme d-inline-block m-0" },
+  titleBox: { class: "d-flex justify-content-between align-items-center p-0" },
+  title: { class: "w3-text-theme d-inline-block m-3" },
   worthBox: {
     class: "d-flex flex-row justify-content-between align-items-center p-3"
   },
   gadgetMenu: {
-    class: "mytooltiptext mttt-below d-flex flex-column align-items-stretch"
+    class: "float-menu d-flex flex-column align-items-stretch"
   },
   gadgetButton: { class: "btn btn-secondary" }
 }
@@ -393,13 +393,13 @@ function SpreadsheetPage() {
 
   const TitleBox =
     h(Card, SheetStyle.titleBox,
-      h("h4", null, `${state.name} ${state.year}`),
-      h("div", SheetStyle.title,
-        h("span", { class: "mytooltip" }, "gadgets"),
+      h("h4", SheetStyle.title, `${state.name} ${state.year}`),
+      h("div", null,
+        h("div", null, "gadgets"),
         h("div", SheetStyle.gadgetMenu,
-          h("button", gadgetButton, "timeline"),
-          h("button", gadgetButton, "proportion"),
-          h("button", gadgetButton, "template"))));
+          h("button", SheetStyle.gadgetButton, "timeline"),
+          h("button", SheetStyle.gadgetButton, "proportion"),
+          h("button", SheetStyle.gadgetButton, "template"))));
 
   const GrossWorthBox =
     h("div", SheetStyle.worthBox,
