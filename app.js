@@ -1,4 +1,3 @@
-import { AboutPage, HelpPage } from "./static.js";
 import { cussyInit, cussyReducer, Cussy } from "./lib.js";
 
 var h = preact.h;
@@ -22,8 +21,11 @@ const dateFmt = TODAY.toLocaleDateString()
 const AppCtx = React.createContext(null);
 
 export default function App() {
-  const [currentPage, setPage] = React.useState(
-    window.location.hash.slice(1) || 'about');
+  const { hash } = window.location
+  const [currentPage, setPage] = React.useState(hash.slice(1) || 'about');
+
+  const aboutPage = React.useRef(document.getElementById("about-page"))
+  const helpPage = React.useRef(document.getElementById("help-page"))
 
   const [state, dispatch] = React.useReducer(cussyReducer, null, cussyInit);
   console.log(state);
@@ -46,14 +48,15 @@ export default function App() {
     setPage(window.location.hash.slice(1));
   }
 
-  return h(AppCtx.Provider, { value: { state, dispatch } },
-    h(Navbar),
-    currentPage === 'about' ? h(AboutPage) : null,
-    currentPage === 'help' ? h(HelpPage) : null,
-    currentPage === 'load' ? h(LoadPage) : null,
-    currentPage === 'save' ? h(DownloadPage) : null,
-    currentPage === 'new' ? h(NewPage) : null,
-    currentPage === 'spreadsheet' ? h(SpreadsheetPage) : null);
+  return (
+    h(AppCtx.Provider, { value: { state, dispatch } },
+      h(Navbar),
+      currentPage === 'about' ? h(Static, { page: aboutPage }) : null,
+      currentPage === 'help' ? h(Static, { page: helpPage }) : null,
+      currentPage === 'load' ? h(LoadPage) : null,
+      currentPage === 'save' ? h(DownloadPage) : null,
+      currentPage === 'new' ? h(NewPage) : null,
+      currentPage === 'spreadsheet' ? h(SpreadsheetPage) : null))
 }
 
 function NavbarLink({ label }) {
@@ -100,6 +103,16 @@ function Navbar(props) {
           h("div", null), h("div", null), h("div", null)),
         LinkBeam()))
   ];
+}
+
+function Static({ page }) {
+  React.useEffect(() => {
+    page.current.style.display = "block";
+    return () => {
+      page.current.style.display = "none"
+    }
+  }, [])
+  return null
 }
 
 function LoadPage() {
