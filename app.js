@@ -1,3 +1,4 @@
+import Navbar from "./header.js";
 import { cussyInit, cussyReducer, Cussy } from "./lib.js";
 
 var h = preact.h;
@@ -9,9 +10,6 @@ const React = {
 
 const TODAY = new Date();
 const ENTER_KEY = 13;
-const SECTIONS = [
-  'spreadsheet', 'new', 'load', 'save', 'help', 'about'
-];
 
 const dateFmt = TODAY.toLocaleDateString()
   .split(/[-./]/g)
@@ -24,6 +22,21 @@ export default function App() {
   const { hash } = window.location
   const [currentPage, setPage] = React.useState(hash.slice(1) || 'about');
 
+  React.useEffect(() => {
+    window.addEventListener("hashchange", handleHashChange);
+  }, []);
+
+  function handleHashChange(e) {
+    setPage(window.location.hash.slice(1));
+  }
+
+  return [
+    h(Navbar),
+    h(Main, { page: currentPage })
+  ]
+}
+
+function Main({ page }) {
   const aboutPage = React.useRef(document.getElementById("about-page"))
   const helpPage = React.useRef(document.getElementById("help-page"))
 
@@ -40,69 +53,14 @@ export default function App() {
     swapColorTheme(state.colorTheme);
   }, [state.colorTheme]);
 
-  React.useEffect(() => {
-    window.addEventListener("hashchange", handleHashChange);
-  }, []);
-
-  function handleHashChange(e) {
-    setPage(window.location.hash.slice(1));
-  }
-
   return (
     h(AppCtx.Provider, { value: { state, dispatch } },
-      h(Navbar),
-      currentPage === 'about' ? h(Static, { page: aboutPage }) : null,
-      currentPage === 'help' ? h(Static, { page: helpPage }) : null,
-      currentPage === 'load' ? h(LoadPage) : null,
-      currentPage === 'save' ? h(DownloadPage) : null,
-      currentPage === 'new' ? h(NewPage) : null,
-      currentPage === 'spreadsheet' ? h(SpreadsheetPage) : null))
-}
-
-function NavbarLink({ label }) {
-  const hash = window.location.hash.slice(1) || 'about';
-
-  return (
-    h("button", {
-      disabled: hash === label,
-      class: "btn btn-primary w3-text-theme",
-      style: { textTransform: "capitalize" },
-      onClick: () => window.location.hash = label
-    }, label)
-  )
-}
-
-const copyright = [
-  "site design and logo",
-  h("br", null),
-  "\xA9 Athran Zuhail 2022 all\xA0rights\xA0reserved"
-]
-
-const LinkBar = () => (
-  h("nav", { class: "btn-group" },
-    SECTIONS.map(s =>
-      h(NavbarLink, { label: s }))))
-
-const LinkBeam = () => (
-  h("nav", { class: "d-flex flex-column float-menu" },
-    SECTIONS.map(s =>
-      h(NavbarLink, { label: s }))))
-
-function Navbar(props) {
-  const [drawer, openDrawer] = React.useState(false);
-
-  return [
-    h("header", { class: "w3-theme-l1 p-2 shadow d-none d-md-flex" },
-      h("div", { class: "h1 m-0" }, "Daddy\xA0Cussy"),
-      LinkBar(),
-      h("div", { class: "copyright" }, ...copyright)),
-    h("header", { class: "w3-theme-l1 p-2 shadow d-flex d-md-none" },
-      h("span", { class: "h2 m-0" }, "Daddy Cussy"),
-      h("div", null,
-        h("div", { class: "hamburger d-inline-block p-0" },
-          h("div", null), h("div", null), h("div", null)),
-        LinkBeam()))
-  ];
+      page === 'about' ? h(Static, { page: aboutPage }) : null,
+      page === 'help' ? h(Static, { page: helpPage }) : null,
+      page === 'load' ? h(LoadPage) : null,
+      page === 'save' ? h(DownloadPage) : null,
+      page === 'new' ? h(NewPage) : null,
+      page === 'spreadsheet' ? h(SpreadsheetPage) : null))
 }
 
 function Static({ page }) {
@@ -564,6 +522,11 @@ function Template(props) {
         }))));
 }
 
+const fakeInput = {
+  class: "form-control",
+  contenteditable: true,
+}
+
 function TableTop({ table }) {
   const { state, dispatch } = React.useContext(AppCtx);
   const dateRef = React.useRef(null);
@@ -572,30 +535,30 @@ function TableTop({ table }) {
 
   function addTrx(e) {
     if (e.which === ENTER_KEY) {
+      e.preventDefault();
       dispatch({
         type: 'addTrx',
         table,
-        name: nameRef.current.value,
-        dateInput: dateRef.current.value,
-        amount: Number(amountRef.current.value || 0.0)
+        name: nameRef.current.innerText,
+        dateInput: dateRef.current.innerText,
+        amount: Number(amountRef.current.innerText || 0.0)
       });
     }
   }
 
   return (
-    h(Card, { class: "sheet-table p-2" },
-      h("span"),
+    h(Card, { class: "sheet-table carrot p-2" },
       h("span", { class: "text-center capitalize" }, table),
-      h("span", { class: "text-code" },
+      h("span", { class: "text-code table-total" },
         state.currency, " ", state.totalsTrx[Cussy.tableIx(table)].toFixed(2)),
 
       h("span", null, "Date"),
       h("span", { class: "text-center" }, "Detail"),
       h("span", null, "Amount"),
 
-      h("input", { ref: dateRef, onKeyUp: addTrx, size: "1" }),
-      h("input", { ref: nameRef, onKeyUp: addTrx }),
-      h("input", { ref: amountRef, onKeyUp: addTrx, size: "1" })));
+      h("div", { ref: dateRef, onKeyDown: addTrx, ...fakeInput }),
+      h("div", { ref: nameRef, onKeyDown: addTrx, ...fakeInput }),
+      h("div", { ref: amountRef, onKeyDown: addTrx, ...fakeInput })));
 }
 
 const MonthTableStyle = { class: "sheet-table shadow-sm bg-white p-2" }
@@ -607,9 +570,12 @@ function MonthTable({ month }) {
   if (trxs[0].length == 0 && trxs[1].length == 0 && trxs[2].length == 0)
     return null;
 
-  return trxs.map(mt =>
-    h("div", { class: "col" },
-      h("div", MonthTableStyle,
+  return trxs.map((mt, ix) =>
+    h("div", { class: "col", key: ix },
+      h("div", {
+        ...MonthTableStyle,
+        style: { visibility: mt.length == 0 ? "hidden" : "visible" }
+      },
         mt.map(trx => h(React.Fragment, { key: trx.id },
           h("span", null, new Date(trx.date).getDate()),
           h("span", null, trx.name),

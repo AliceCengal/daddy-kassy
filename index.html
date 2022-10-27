@@ -26,31 +26,12 @@
       align-items: center;
     }
 
-    div.mobile-menu {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    div.hamburger>div {
-      width: 30px;
-      height: 5px;
-      background-color: whitesmoke;
-      margin: 6px 0;
-    }
-
-    div.hamburger {
-      cursor: pointer;
-    }
-
     .copyright {
       font-size: small;
       text-align: right;
     }
 
-    main {
+    main, section {
       width: 100%;
       padding-top: 2rem;
       padding-bottom: 8rem;
@@ -58,7 +39,7 @@
       flex-grow: 1
     }
 
-    main#help-page, main#about-page { display: none; }
+    section#help-page, section#about-page { display: none; }
 
     .text-code {
       font-family: monospace;
@@ -101,7 +82,9 @@
       margin-bottom: auto;
     }
 
-    .sheet-table *:nth-child(3n) { text-align: right; }
+    .carrot *:nth-child(3n-1) { text-align: right; }
+    .sheet-table:not(.carrot) *:nth-child(3n) { text-align: right; }
+    .table-total { grid-column: 2 / 4; }
 
     .reading-box { padding-inline: calc(50% - 29rem); }
     .reading-box > * { margin-inline: 2rem; }
@@ -118,7 +101,7 @@
     preact.render(preact.h(App), document.body);
   </script>
 
-  <main id="about-page" class='reading-box'>
+  <section id="about-page" class='reading-box'>
     <h1 class='w3-text-theme'>About this app</h1>
     <p>This is an app for tracking and analyzing simple personal income, expense,
       and investment. The target audience is an average working adult.</p>
@@ -131,9 +114,9 @@
       important that you <a href="#save">Save</a> your work after
       you're done, otherwise all of your progress will be lost.</p>
     <p>If you need any further <a href="#help">Help</a>, feel free to ask any question.</p>
-  </main>
+  </section>
 
-  <main id="help-page" class='reading-box'>
+  <section id="help-page" class='reading-box'>
     <h1 class='w3-text-theme'>Help for you</h1>
     <h4>Q: How do I edit or delete an entry?</h4>
     <p>A: DOUBLE-CLICK the row that you want to edit or delete. That row will be deleted
@@ -294,7 +277,7 @@
     <h4>Q: How do I transition to the next financial year?</h4>
     <p>A: On the New page, type your current Gross Worth into the Starting Balance field,
       and your current total Obligation into the Starting Obligation field.</p>
-  </main>
+  </section>
 </body>
 
 </html>
