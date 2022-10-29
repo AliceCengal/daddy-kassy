@@ -40,7 +40,7 @@ function actionsFromFile(temp) {
       type: 'addManyTrx',
       many: temp.transactions.map(({ type, table, name, date, amount }) => (
         {
-          table: type.toLowerCase() || table,
+          table: type?.toLowerCase() || table,
           name,
           dateInput: date,
           amount: Number(amount)

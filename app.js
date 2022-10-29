@@ -10,6 +10,7 @@ const React = {
 
 const TODAY = new Date();
 const ENTER_KEY = 13;
+const FILE_PREFIX = "account-"
 
 const dateFmt = TODAY.toLocaleDateString()
   .split(/[-./]/g)
@@ -73,16 +74,37 @@ function Static({ page }) {
   return null
 }
 
+const loadStyle = {
+  listItem: {
+    style: {
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingLeft: "1rem",
+      border: "1px solid grey",
+      borderRadius: "4px",
+    }
+  },
+  deleteBtn: {
+    class: "btn btn-danger"
+  },
+  takeBtn: {
+    class: "btn btn-success"
+  }
+}
+
 function LoadPage() {
   const { state, dispatch } = React.useContext(AppCtx);
   const [tempAccount, setTempAccount] = React.useState(null);
-  const storedAccount = [];
-  /* 
-  for (var i = 0; i < localStorage.length; i++) {
-    if (localStorage.key(i).startsWith('account-'))
-      storedAccount.push(localStorage.key(i));
-  }
-  */
+  const [lcState, setLcState] = React.useState(localStorage.length)
+
+  const storedAccount = React.useMemo(() => {
+    return Object.keys(localStorage)
+      .filter(k => k.startsWith(FILE_PREFIX))
+      .map(k => [k, localStorage.getItem(k)])
+  }, [localStorage.length])
+
   function choosenFile(e) {
     let fr = new FileReader();
     fr.onload = function () {
@@ -101,6 +123,34 @@ function LoadPage() {
   function chooseAccount(e) {
     Cussy.actionsFromFile(tempAccount).forEach(dispatch);
     window.location.hash = 'spreadsheet';
+  }
+
+  function deleteStored(e) {
+    localStorage.removeItem(
+      e.currentTarget.dataset.account
+    )
+    setLcState(l => l - 1)
+  }
+
+  function loadStored(e) {
+    const accountStr = localStorage.getItem(
+      e.currentTarget.dataset.account
+    )
+    let temp;
+    try {
+      temp = JSON.parse(accountStr)
+    } catch (error) {
+      alert("Could not parse stored data. Deleting...");
+      localStorage.removeItem(
+        e.currentTarget.dataset.account
+      )
+      setLcState(l => l - 1)
+    }
+
+    if (temp) {
+      Cussy.actionsFromFile(temp).forEach(dispatch);
+      window.location.hash = 'spreadsheet';
+    }
   }
 
   const LoadFromFile =
@@ -126,15 +176,30 @@ function LoadPage() {
           disabled: true
         }, "LOAD") :
         h("button", {
-          class: "btn btn-primary",
+          class: "btn btn-success",
           onClick: chooseAccount
         }, "LOAD ", tempAccount.name, ", ", tempAccount.year));
 
   const LoadFromStorage =
     h(Card, { class: "p-3" },
       h("h3", null, "Load from browser storage"),
-      localStorage.length > 1 ?
-        storedAccount.map(aa => h("p", null, "aa")) :
+      storedAccount.length > 0 ?
+        storedAccount.map(
+          ([k, v]) =>
+            h("div", loadStyle.listItem,
+              k.slice(FILE_PREFIX.length),
+              h("div", null,
+                h("button", {
+                  ...loadStyle.takeBtn,
+                  onClick: loadStored,
+                  "data-account": k,
+                }, "OK"),
+                h("button", {
+                  ...loadStyle.deleteBtn,
+                  onClick: deleteStored,
+                  "data-account": k,
+                }, "KO")))) :
+
         h("p", null, "No items in local storage"));
 
   return (
@@ -147,24 +212,23 @@ function LoadPage() {
 }
 
 function DownloadPage() {
-  const [danger, setDanger] = React.useState(localStorage.getItem('danger') || '');
+  const { state, dispatch } = React.useContext(AppCtx);
+  const [danger, setDanger] = React.useState(
+    localStorage.getItem('danger') || ''
+  );
 
   function downloadAccount() {
-    if (account !== null)
-      download(
-        JSON.stringify(account),
-        account.name + '-' + account.year
-      );
-    else alert("Create an account first.");
+    download(
+      JSON.stringify(state),
+      `${FILE_PREFIX}${state.name}-${state.year}`,
+    );
   }
 
   function saveAccount() {
-    if (account !== null) {
-      localStorage.setItem('danger', 'danger');
-      localStorage.setItem(
-        `account-${account.name}-${account.year}`,
-        JSON.stringify(account));
-    } else alert("Create an account first.");
+    localStorage.setItem('danger', 'danger');
+    localStorage.setItem(
+      `${FILE_PREFIX}${state.name}-${state.year}`,
+      JSON.stringify(state));
   }
 
   return (
@@ -182,7 +246,7 @@ function DownloadPage() {
         again, find that file and `,
         h("a", { href: "#load" }, "Load"), " it back into the app."),
       h("div", { class: "mb-5" },
-        h("button", { class: "btn btn-primary", onClick: downloadAccount },
+        h("button", { class: "btn btn-success", onClick: downloadAccount },
           "DOWNLOAD")),
       danger ?
         h("div", null,
@@ -190,7 +254,7 @@ function DownloadPage() {
           h("p", null, "Only do this if this page is open on your personal device."),
           h("p", null,
             "Do not click the button below if you are using a public computer"),
-          h("button", { class: "btn btn-danger", onClick: saveAccount }, "SAVE"),
+          h("button", { class: "btn btn-warning", onClick: saveAccount }, "SAVE"),
           h("button", { class: "btn btn-link", onClick: () => setDanger('') },
             "Hide")) :
         h("p", { class: "text-secondary", onClick: () => setDanger('danger') },
@@ -378,7 +442,7 @@ const SheetStyle = {
     contenteditable: true,
   },
   trxDeleteBtn: {
-    class: "btn btn-warning delete-btn"
+    class: "btn btn-danger delete-btn"
   }
 }
 
