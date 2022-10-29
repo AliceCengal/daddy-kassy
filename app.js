@@ -16,8 +16,6 @@ const dateFmt = TODAY.toLocaleDateString()
   .filter(a => a < 32) // remove year, keep date and month
   .join(TODAY.toLocaleDateString().match(/[-./]/g)[0]);
 
-const AppCtx = React.createContext(null);
-
 export default function App() {
   const { hash } = window.location
   const [currentPage, setPage] = React.useState(hash.slice(1) || 'about');
@@ -35,6 +33,8 @@ export default function App() {
     h(Main, { page: currentPage })
   ]
 }
+
+const AppCtx = React.createContext(null);
 
 function Main({ page }) {
   const aboutPage = React.useRef(document.getElementById("about-page"))
@@ -372,7 +372,14 @@ const SheetStyle = {
   gadgetMenu: {
     class: "float-menu d-flex flex-column align-items-stretch"
   },
-  gadgetButton: { class: "btn btn-secondary" }
+  gadgetButton: { class: "btn btn-secondary" },
+  fakeInput: {
+    class: "form-control",
+    contenteditable: true,
+  },
+  trxDeleteBtn: {
+    class: "btn btn-warning delete-btn"
+  }
 }
 
 function SpreadsheetPage() {
@@ -522,11 +529,6 @@ function Template(props) {
         }))));
 }
 
-const fakeInput = {
-  class: "form-control",
-  contenteditable: true,
-}
-
 function TableTop({ table }) {
   const { state, dispatch } = React.useContext(AppCtx);
   const dateRef = React.useRef(null);
@@ -556,9 +558,9 @@ function TableTop({ table }) {
       h("span", { class: "text-center" }, "Detail"),
       h("span", null, "Amount"),
 
-      h("div", { ref: dateRef, onKeyDown: addTrx, ...fakeInput }),
-      h("div", { ref: nameRef, onKeyDown: addTrx, ...fakeInput }),
-      h("div", { ref: amountRef, onKeyDown: addTrx, ...fakeInput })));
+      h("div", { ref: dateRef, onKeyDown: addTrx, ...SheetStyle.fakeInput }),
+      h("div", { ref: nameRef, onKeyDown: addTrx, ...SheetStyle.fakeInput }),
+      h("div", { ref: amountRef, onKeyDown: addTrx, ...SheetStyle.fakeInput })));
 }
 
 const MonthTableStyle = { class: "sheet-table shadow-sm bg-white p-2" }
@@ -576,10 +578,75 @@ function MonthTable({ month }) {
         ...MonthTableStyle,
         style: { visibility: mt.length == 0 ? "hidden" : "visible" }
       },
-        mt.map(trx => h(React.Fragment, { key: trx.id },
-          h("span", null, new Date(trx.date).getDate()),
-          h("span", null, trx.name),
-          h("span", { class: "text-code" }, trx.amount.toFixed(2)))))));
+        mt.map(trx => h(TrxRow, { trx: trx, key: trx.id })))));
+}
+
+function TrxRow({ trx }) {
+  const { state, dispatch } = React.useContext(AppCtx);
+  const [editing, setEditing] = React.useState(false);
+  const dateRef = React.useRef(null);
+  const nameRef = React.useRef(null);
+  const amountRef = React.useRef(null);
+
+  function submitTrx(e) {
+    if (e.which === ENTER_KEY) {
+      e.preventDefault();
+      dispatch({
+        type: "removeTrx",
+        id: trx.id
+      })
+      dispatch({
+        type: 'addTrx',
+        table: trx.table,
+        name: nameRef.current.innerText,
+        dateInput: dateRef.current.innerText,
+        amount: Number(amountRef.current.innerText || 0.0)
+      });
+      setEditing(false)
+    }
+  }
+
+  function deleteTrx(e) {
+    dispatch({
+      type: "removeTrx",
+      id: trx.id
+    })
+  }
+
+  function startEdit(e) {
+    e.preventDefault()
+    setEditing(true)
+  }
+
+  if (editing) return [
+    h("div", {
+      ...SheetStyle.fakeInput,
+      ref: dateRef,
+      onKeyDown: submitTrx
+    }, Cussy.displayDate(trx)),
+    h("div", {
+      ...SheetStyle.fakeInput,
+      ref: nameRef,
+      onKeyDown: submitTrx
+    }, trx.name,
+      h("button", {
+        ...SheetStyle.trxDeleteBtn,
+        onClick: deleteTrx
+      }, "DELETE")),
+    h("div", {
+      ...SheetStyle.fakeInput,
+      ref: amountRef,
+      onKeyDown: submitTrx
+    }, trx.amount.toFixed(2))
+
+  ]; else return [
+    h("span", { ondblclick: startEdit }, Cussy.displayDate(trx)),
+    h("span", { ondblclick: startEdit }, trx.name),
+    h("span", {
+      class: "text-code",
+      ondblclick: startEdit
+    }, trx.amount.toFixed(2))
+  ]
 }
 
 const MONTHS = [

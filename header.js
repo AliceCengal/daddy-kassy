@@ -40,11 +40,11 @@ const LinkBeam2 = () => (
 export default function Navbar() {
   return [
     h("header", { class: "w3-theme-l1 p-2 shadow d-none d-md-flex" },
-      h("div", { class: "h1 m-0" }, "Daddy\xA0Cussy"),
+      h("div", { class: "h1 m-0" }, "Daddy\xA0Kassy"),
       LinkBar(),
       h("div", { class: "copyright" }, ...copyright)),
     h("header", { class: "w3-theme-l1 p-2 shadow d-flex d-md-none" },
-      h("span", { class: "h2 m-0" }, "Daddy Cussy"),
+      h("span", { class: "h2 m-0" }, "Daddy Kassy"),
       LinkBeam1()),
     h("header", { class: "w3-theme-l1 p-2 shadow d-flex d-md-none" },
       h("div"),

@@ -85,7 +85,7 @@ function trxMake(list, year, table, name, dateInput, amount) {
   };
 }
 
-export function getForMonth(transactions, month) {
+function getForMonth(transactions, month) {
   return transactions.reduce((cumm, curr) => {
     const d = new Date(curr.date).getMonth();
     if (d === month) {
@@ -93,6 +93,16 @@ export function getForMonth(transactions, month) {
     }
     return cumm;
   }, [[], [], []]);
+}
+
+function displayDate(trx) {
+  const dd = new Date(trx.date).toLocaleDateString()
+  const div = dd.match(/[-./]/g)[0]
+  return (
+    dd.split(div)
+      .filter((a) => a < 32)
+      .join(div)
+  )
 }
 
 export function cussyReducer(state, { type, ...values }) {
@@ -122,7 +132,20 @@ export function cussyReducer(state, { type, ...values }) {
         };
       }
 
-      const updated = [...state.transactions, trxNew];
+      const insertIndex = state.transactions.findIndex(
+        (tt) => tt.date < trxNew.date
+      )
+      const updated = (insertIndex == -1 ?
+        [
+          ...state.transactions,
+          trxNew,
+        ] : [
+          ...state.transactions.slice(0, insertIndex),
+          trxNew,
+          ...state.transactions.slice(insertIndex)
+        ]
+      );
+
       const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
       return {
         ...state,
@@ -143,7 +166,7 @@ export function cussyReducer(state, { type, ...values }) {
       const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
       return {
         ...state,
-        transactions: updated,
+        transactions: updated.sort((a, b) => b.date - a.date),
         totalsTrx: meta
       };
     }
@@ -203,4 +226,5 @@ export const Cussy = {
   actionsFromFile,
   getForMonth,
   tableIx,
+  displayDate,
 }
