@@ -11,7 +11,7 @@ const TABLE_IX = {
   'yearly': 2
 };
 
-export function cussyInit(name, year) {
+function init(name, year) {
   return {
     version: VERSION,
     name: name || 'You',
@@ -52,7 +52,7 @@ function actionsFromFile(temp) {
       type: 'addManyTemplate',
       many: temp.template.map(({ trxType, table, name, amount }) => (
         {
-          table: trxType.toLowerCase() || table,
+          table: trxType?.toLowerCase() || table,
           name,
           amount: Number(amount)
         }
@@ -65,10 +65,13 @@ function tableIx(tbl) {
   return TABLE_IX[tbl];
 }
 
-function trxReducer(prev, curr) {
-  prev[TABLE_IX[curr.table]] += curr.amount;
-  return prev;
-}
+const trxReducer = [
+  (prev, curr) => {
+    prev[TABLE_IX[curr.table]] += curr.amount;
+    return prev;
+  },
+  [0.0, 0.0, 0.0]
+]
 
 function trxMake(list, year, table, name, dateInput, amount) {
   const id = list.reduce((a, b) => Math.max(a, b.id), 0);
@@ -105,10 +108,86 @@ function displayDate(trx) {
   )
 }
 
-export function cussyReducer(state, { type, ...values }) {
+function getDailyWorth(transactions, year) {
+  if (transactions.length == 0) {
+    return Array(365).fill(0)
+      .map((a, ix) => [0, 0, new Date(year, 0, ix + 1)])
+  }
+
+  const a = transactions.reduceRight(
+    dailyWorthReducer[0],
+    [[0, 0, new Date(year, 0, 1)]]
+  )
+
+  const pad = Array(365 - a.length).fill(0)
+    .map((z, ix) => [
+      a[0][0],
+      a[0][1],
+      new Date(year, 0, 365 - ix)
+    ])
+
+  return [...pad, ...a].reverse()
+}
+
+function sameDay(a, b) {
+  return a.getMonth() == b.getMonth() &&
+    a.getDate() == b.getDate()
+}
+
+const dailyWorthReducer = [
+  (cumm, trx) => {
+    const trxDate = new Date(trx.date);
+    const last = cumm[0]
+
+    if (sameDay(trxDate, last[2])) {
+      if (trx.table === "income") {
+        last[0] += trx.amount;
+        last[1] += trx.amount;
+      } else if (trx.table === "expense") {
+        last[0] -= trx.amount;
+        last[1] -= trx.amount;
+      } else if (trx.table === "obligation") {
+        last[1] += trx.amount;
+      }
+      return cumm
+    }
+
+    const dateDiff = Math.floor(
+      (trxDate - last[2]) / (1000 * 3600 * 24)
+    )
+
+    const filler = Array(dateDiff).fill(0)
+      .map((a, ix) => [
+        last[0], 
+        last[1], 
+        new Date(
+          last[2].getFullYear(),
+          last[2].getMonth(),
+          last[2].getDate() + dateDiff - ix)])
+
+    if (trx.table === "income") {
+      filler[0][0] += trx.amount;
+      filler[0][1] += trx.amount;
+    } else if (trx.table === "expense") {
+      filler[0][0] -= trx.amount;
+      filler[0][1] -= trx.amount;
+    } else if (trx.table === "obligation") {
+      filler[0][1] += trx.amount;
+    }
+
+    return [
+      ...filler,
+      ...cumm
+    ]
+  },
+  [[0, 0, new Date(0)]]
+]
+
+
+function reducer(state, { type, ...values }) {
   switch (type) {
     case 'new':
-      return cussyInit(values.name, values.year);
+      return init(values.name, values.year);
     case 'colorTheme':
       return {
         ...state,
@@ -146,7 +225,7 @@ export function cussyReducer(state, { type, ...values }) {
         ]
       );
 
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
+      const meta = updated.reduce(...trxReducer);
       return {
         ...state,
         transactions: updated,
@@ -163,7 +242,7 @@ export function cussyReducer(state, { type, ...values }) {
       });
 
       const updated = [...state.transactions, ...toAdd];
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
+      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
       return {
         ...state,
         transactions: updated.sort((a, b) => b.date - a.date),
@@ -172,7 +251,7 @@ export function cussyReducer(state, { type, ...values }) {
     }
     case 'removeTrx': {
       const updated = state.transactions.filter(trx => trx.id !== values.id);
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
+      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
       return {
         ...state,
         transactions: updated,
@@ -183,7 +262,7 @@ export function cussyReducer(state, { type, ...values }) {
     case 'addTemplate': {
       const { table, name, amount } = values;
       const updated = [...state.template, { table, name, amount }];
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
+      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
       return {
         ...state,
         template: updated,
@@ -197,7 +276,7 @@ export function cussyReducer(state, { type, ...values }) {
         })
       );
       const updated = [...state.template, ...normed];
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
+      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
       return {
         ...state,
         template: updated,
@@ -206,7 +285,7 @@ export function cussyReducer(state, { type, ...values }) {
     }
     case 'removeTemplate': {
       const updated = state.transactions.filter(trx => trx.name !== values.name);
-      const meta = updated.reduce(trxReducer, [0.0, 0.0, 0.0]);
+      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
       return {
         ...state,
         transactions: updated,
@@ -222,9 +301,14 @@ export function cussyReducer(state, { type, ...values }) {
   throw Error('Unknown action: ' + type);
 }
 
-export const Cussy = {
+const Cussy = {
+  init,
+  reducer,
   actionsFromFile,
   getForMonth,
   tableIx,
   displayDate,
+  getDailyWorth
 }
+
+export default Cussy;

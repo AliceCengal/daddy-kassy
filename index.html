@@ -12,6 +12,7 @@
 
   <script crossorigin src="https://unpkg.com/preact@latest/dist/preact.min.js"></script>
   <script crossorigin src="https://unpkg.com/preact@latest/hooks/dist/hooks.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
   <style>
     html, body {
@@ -94,6 +95,13 @@
     }
 
     *:has(> .delete-btn) { position: relative; }
+
+
+    div:has(> canvas) {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
 
     .reading-box { padding-inline: calc(50% - 29rem); }
     .reading-box > * { margin-inline: 2rem; }

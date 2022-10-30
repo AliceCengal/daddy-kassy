@@ -1,5 +1,5 @@
 import Navbar from "./header.js";
-import { cussyInit, cussyReducer, Cussy } from "./lib.js";
+import Cussy from "./lib.js";
 
 var h = preact.h;
 
@@ -41,8 +41,10 @@ function Main({ page }) {
   const aboutPage = React.useRef(document.getElementById("about-page"))
   const helpPage = React.useRef(document.getElementById("help-page"))
 
-  const [state, dispatch] = React.useReducer(cussyReducer, null, cussyInit);
+  const [state, dispatch] = React.useReducer(Cussy.reducer, null, Cussy.init);
   console.log(state);
+  //console.log(Cussy.getDailyWorth(state.transactions, state.year))
+
   React.useEffect(() => {
     if (state.alertMessage) {
       alert(state.alertMessage);
@@ -450,15 +452,28 @@ function SpreadsheetPage() {
   const { state, dispatch } = React.useContext(AppCtx);
   const [openGadget, setOpenGadget] = React.useState('');
 
+  function handleGadget(e) {
+    setOpenGadget(e.currentTarget.innerText)
+  }
+
   const TitleBox =
     h(Card, SheetStyle.titleBox,
       h("h4", SheetStyle.title, `${state.name} ${state.year}`),
       h("div", null,
         h("div", null, "gadgets"),
         h("div", SheetStyle.gadgetMenu,
-          h("button", SheetStyle.gadgetButton, "timeline"),
-          h("button", SheetStyle.gadgetButton, "proportion"),
-          h("button", SheetStyle.gadgetButton, "template"))));
+          h("button", {
+            ...SheetStyle.gadgetButton,
+            onClick: handleGadget
+          }, "timeline"),
+          h("button", {
+            ...SheetStyle.gadgetButton,
+            onClick: handleGadget
+          }, "proportion"),
+          h("button", {
+            ...SheetStyle.gadgetButton,
+            onClick: handleGadget
+          }, "template"))));
 
   const GrossWorthBox =
     h("div", SheetStyle.worthBox,
@@ -482,6 +497,10 @@ function SpreadsheetPage() {
         h("div", { class: "col-6 col-md-4" }, GrossWorthBox),
         h("div", { class: "col-6 col-md-4" }, NetWorthBox),
 
+        openGadget == "timeline" ?
+          h("div", { class: "col-12" },
+            h(Timeline)) : null,
+
         h("div", { class: "btn-group d-md-none col-12" },
           h("button", { class: "btn btn-secondary" }, "INCOME"),
           h("button", { class: "btn btn-secondary" }, "EXPENSE"),
@@ -499,7 +518,98 @@ function SpreadsheetPage() {
         ))));
 }
 
+const options = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  plugins: {
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context) {
+          return context.dataset.label + ': $' + context.formattedValue
+        }
+      }
+    }
+  }
+}
+
+function threeDaySmoother(prev, curr, ix) {
+  if (ix % 3 == 0) {
+    prev.unshift(curr);
+    return prev;
+  } if (ix % 3 == 1) {
+    prev[0][0] = (prev[0][0] + curr[0]) / 2;
+    prev[0][1] = (prev[0][1] + curr[1]) / 2;
+    return prev;
+  } if (ix % 3 == 2) {
+    prev[0][0] = (prev[0][0] * 2 + curr[0]) / 3;
+    prev[0][1] = (prev[0][1] * 2 + curr[1]) / 3;
+    return prev;
+  }
+}
+
+const transduce = [
+  (cumm, curr) => {
+    cumm[0].push(curr[0])
+    cumm[1].push(curr[1])
+    cumm[2].push(curr[2])
+    return cumm
+  },
+  [[], [], []]
+]
+
 function Timeline(props) {
+  const { state, dispatch } = React.useContext(AppCtx);
+  const canvasRef = React.useRef(null);
+
+  const [grossworths, networths, dates] =
+    Cussy.getDailyWorth(state.transactions, state.year)
+      .reduce(threeDaySmoother, [])
+      .reverse()
+      .reduce(transduce[0], [[], [], []])
+
+  const data = {
+    labels: dates.map(d => d.toLocaleDateString()),
+    datasets: [
+      {
+        label: "Gross",
+        data: grossworths,
+        fill: false,
+        borderColor: "rgba(0,0,200,0.2)",
+        backgroundColor: dates.map((z, ix) =>
+          `hsl(${(360 + 180 - ix * 360 / dates.length) % 360}, 100%, 50%)`
+        )
+      },
+      {
+        label: "Net",
+        data: networths,
+        fill: false,
+        borderColor: "rgba(200,0,0,0.2)",
+        backgroundColor: dates.map((z, ix) =>
+          `hsl(${(360 + 180 - ix * 360 / dates.length) % 360}, 100%, 50%)`
+        )
+      }
+    ]
+  }
+
+  React.useEffect(() => {
+    const chartRef2 = new Chart(
+      canvasRef.current,
+      {
+        type: "line",
+        data,
+        options
+      }
+    )
+
+    return () => {
+      chartRef2.destroy()
+    }
+  }, [])
+
   return (
     h("div", null,
       h("div", null,
@@ -508,7 +618,7 @@ function Timeline(props) {
         h("button", null, "q2"),
         h("button", null, "q3"),
         h("button", null, "q4")),
-      h("div", null, h("canvas"))));
+      h("div", null, h("canvas", { ref: canvasRef }))));
 }
 
 function Pizza(props) {
