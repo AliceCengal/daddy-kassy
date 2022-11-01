@@ -499,7 +499,12 @@ function SpreadsheetPage() {
 
         openGadget == "timeline" ?
           h("div", { class: "col-12" },
-            h(Timeline)) : null,
+            h(Timeline)) :
+          openGadget == "proportion" ?
+            Pizza().map(pp =>
+              h("div", { class: "col-4" },
+                pp)) :
+            null,
 
         h("div", { class: "btn-group d-md-none col-12" },
           h("button", { class: "btn btn-secondary" }, "INCOME"),
@@ -518,7 +523,7 @@ function SpreadsheetPage() {
         ))));
 }
 
-const options = {
+const timelineOptions = {
   responsive: true,
   maintainAspectRatio: false,
   animation: false,
@@ -529,7 +534,7 @@ const options = {
     tooltip: {
       callbacks: {
         label: function (context) {
-          return context.dataset.label + ': $' + context.formattedValue
+          return context.dataset.label + ': ' + context.formattedValue
         }
       }
     }
@@ -551,62 +556,62 @@ function threeDaySmoother(prev, curr, ix) {
   }
 }
 
-const transduce = [
+const transduce = () => [
   (cumm, curr) => {
     cumm[0].push(curr[0])
     cumm[1].push(curr[1])
     cumm[2].push(curr[2])
     return cumm
-  },
-  [[], [], []]
+  }, [[], [], []]
 ]
 
-function Timeline(props) {
+function Timeline() {
   const { state, dispatch } = React.useContext(AppCtx);
   const canvasRef = React.useRef(null);
 
-  const [grossworths, networths, dates] =
-    Cussy.getDailyWorth(state.transactions, state.year)
-      .reduce(threeDaySmoother, [])
-      .reverse()
-      .reduce(transduce[0], [[], [], []])
-
-  const data = {
-    labels: dates.map(d => d.toLocaleDateString()),
-    datasets: [
-      {
-        label: "Gross",
-        data: grossworths,
-        fill: false,
-        borderColor: "rgba(0,0,200,0.2)",
-        backgroundColor: dates.map((z, ix) =>
-          `hsl(${(360 + 180 - ix * 360 / dates.length) % 360}, 100%, 50%)`
-        )
-      },
-      {
-        label: "Net",
-        data: networths,
-        fill: false,
-        borderColor: "rgba(200,0,0,0.2)",
-        backgroundColor: dates.map((z, ix) =>
-          `hsl(${(360 + 180 - ix * 360 / dates.length) % 360}, 100%, 50%)`
-        )
-      }
-    ]
-  }
-
   React.useEffect(() => {
-    const chartRef2 = new Chart(
+
+    const [grossworths, networths, dates] =
+      Cussy.getDailyWorth(state.transactions, state.year)
+        .reduce(threeDaySmoother, [])
+        .reverse()
+        .reduce(...transduce())
+
+    const data = {
+      labels: dates.map(d => d.toLocaleDateString()),
+      datasets: [
+        {
+          label: "Gross",
+          data: grossworths,
+          fill: false,
+          borderColor: "rgba(0,0,200,0.4)",
+          backgroundColor: dates.map((z, ix) =>
+            `hsl(${(360 + 180 - ix * 360 / dates.length) % 360}, 100%, 50%)`
+          )
+        },
+        {
+          label: "Net",
+          data: networths,
+          fill: false,
+          borderColor: "rgba(200,0,0,0.4)",
+          backgroundColor: dates.map((z, ix) =>
+            `hsl(${(360 + 180 - ix * 360 / dates.length) % 360}, 100%, 50%)`
+          )
+        }
+      ]
+    }
+
+    const chartRef = new Chart(
       canvasRef.current,
       {
         type: "line",
         data,
-        options
+        options: timelineOptions
       }
     )
 
     return () => {
-      chartRef2.destroy()
+      chartRef.destroy()
     }
   }, [])
 
@@ -621,15 +626,106 @@ function Timeline(props) {
       h("div", null, h("canvas", { ref: canvasRef }))));
 }
 
-function Pizza(props) {
-  return (
-    h("div", { class: "d-grid" },
-      h("div", null,
-        h("canvas")),
-      h("div", null,
-        h("canvas", null)),
-      h("div", null,
-        h("canvas"))));
+const proportionReducer = () => [
+  (cumm, curr) => {
+    const { table, name, amount } = curr;
+    if (amount == 0) return curr;
+    const groupName = name.split(/\s*-\s*/, 1)[0]
+
+    const pizza = cumm[Cussy.tableIx(table)];
+
+    pizza.set(groupName,
+      (pizza.get(groupName) || 0) + Number(amount)
+    )
+    return cumm
+  }, [new Map(), new Map(), new Map()]
+]
+
+const proportionOption = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  scales: {
+    x: {
+      ticks: {
+        display: false
+      },
+      stacked: true
+    },
+    y: {
+      stacked: true
+    }
+  },
+  plugins: {
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context) {
+          return context.formattedValue
+        }
+      }
+    }
+  }
+}
+
+function Pizza() {
+  const { state, dispatch } = React.useContext(AppCtx);
+  const canvasRefs = [
+    React.useRef(null), React.useRef(null), React.useRef(null)
+  ]
+
+  React.useEffect(() => {
+
+    const pizzas = state.transactions.reduce(
+      ...proportionReducer()
+    )
+
+    const data = pizzas.map((p, pix) => {
+      const p2 = Array.from(p)
+        .sort((a, b) => b[1] - a[1])
+        .filter(a => a[1] > 1 || a[1] < -1);
+      const magn = p2[0][1] - p2[p2.length - 1][1];
+
+      return {
+        labels: p2.map(a => a[0]),
+        datasets: [
+          {
+            data: p2.map(a => a[1]),
+            backgroundColor: p2.map((z, ix) =>
+              `hsl(${pix * 120}, ${100 * Math.abs(
+                (z[1] - p2[p2.length - 1][1]) / magn
+              )}%, 50%)`
+            )
+          }
+        ]
+      }
+    })
+    console.log(data)
+    const chartRefs = data.map((d, ix) =>
+      new Chart(
+        canvasRefs[ix].current,
+        {
+          type: "bar",
+          data: d,
+          options: proportionOption
+        }
+      ))
+
+    return () => {
+      chartRefs.forEach(ref => ref.destroy())
+    }
+  }, [])
+
+  return [
+    h("div", null,
+      h("canvas", { ref: canvasRefs[0] })),
+    h("div", null,
+      h("canvas", { ref: canvasRefs[1] })),
+    h("div", null,
+      h("canvas", { ref: canvasRefs[2] }))
+  ];
 }
 
 function Template(props) {

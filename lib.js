@@ -65,7 +65,7 @@ function tableIx(tbl) {
   return TABLE_IX[tbl];
 }
 
-const trxReducer = [
+const trxReducer = () => [
   (prev, curr) => {
     prev[TABLE_IX[curr.table]] += curr.amount;
     return prev;
@@ -111,7 +111,7 @@ function displayDate(trx) {
 function getDailyWorth(transactions, year) {
   if (transactions.length == 0) {
     return Array(365).fill(0)
-      .map((a, ix) => [0, 0, new Date(year, 0, ix + 1)])
+      .map((a, ix) => [0, 0, new Date(year, 0, 1)])
   }
 
   const a = transactions.reduceRight(
@@ -158,8 +158,8 @@ const dailyWorthReducer = [
 
     const filler = Array(dateDiff).fill(0)
       .map((a, ix) => [
-        last[0], 
-        last[1], 
+        last[0],
+        last[1],
         new Date(
           last[2].getFullYear(),
           last[2].getMonth(),
@@ -180,9 +180,8 @@ const dailyWorthReducer = [
       ...cumm
     ]
   },
-  [[0, 0, new Date(0)]]
+  [[0, 0, new Date(2022, 0, 1)]]
 ]
-
 
 function reducer(state, { type, ...values }) {
   switch (type) {
@@ -225,7 +224,7 @@ function reducer(state, { type, ...values }) {
         ]
       );
 
-      const meta = updated.reduce(...trxReducer);
+      const meta = updated.reduce(...trxReducer());
       return {
         ...state,
         transactions: updated,
@@ -242,7 +241,7 @@ function reducer(state, { type, ...values }) {
       });
 
       const updated = [...state.transactions, ...toAdd];
-      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
+      const meta = updated.reduce(...trxReducer());
       return {
         ...state,
         transactions: updated.sort((a, b) => b.date - a.date),
@@ -251,7 +250,7 @@ function reducer(state, { type, ...values }) {
     }
     case 'removeTrx': {
       const updated = state.transactions.filter(trx => trx.id !== values.id);
-      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
+      const meta = updated.reduce(...trxReducer());
       return {
         ...state,
         transactions: updated,
@@ -262,7 +261,7 @@ function reducer(state, { type, ...values }) {
     case 'addTemplate': {
       const { table, name, amount } = values;
       const updated = [...state.template, { table, name, amount }];
-      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
+      const meta = updated.reduce(...trxReducer());
       return {
         ...state,
         template: updated,
@@ -276,7 +275,7 @@ function reducer(state, { type, ...values }) {
         })
       );
       const updated = [...state.template, ...normed];
-      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
+      const meta = updated.reduce(...trxReducer());
       return {
         ...state,
         template: updated,
@@ -285,7 +284,7 @@ function reducer(state, { type, ...values }) {
     }
     case 'removeTemplate': {
       const updated = state.transactions.filter(trx => trx.name !== values.name);
-      const meta = updated.reduce(trxReducer[0], [0, 0, 0]);
+      const meta = updated.reduce(...trxReducer());
       return {
         ...state,
         transactions: updated,
@@ -308,7 +307,7 @@ const Cussy = {
   getForMonth,
   tableIx,
   displayDate,
-  getDailyWorth
+  getDailyWorth,
 }
 
 export default Cussy;
