@@ -121,12 +121,12 @@ function getDailyWorth(transactions, year) {
 
   const pad = Array(365 - a.length).fill(0)
     .map((z, ix) => [
-      a[0][0],
-      a[0][1],
-      new Date(year, 0, 365 - ix)
+      a[a.length - 1][0],
+      a[a.length - 1][1],
+      new Date(year, 0, a.length + ix)
     ])
 
-  return [...pad, ...a].reverse()
+  return [...a, ...pad]
 }
 
 function sameDay(a, b) {
@@ -137,7 +137,7 @@ function sameDay(a, b) {
 const dailyWorthReducer = [
   (cumm, trx) => {
     const trxDate = new Date(trx.date);
-    const last = cumm[0]
+    const last = cumm[cumm.length - 1]
 
     if (sameDay(trxDate, last[2])) {
       if (trx.table === "income") {
@@ -163,22 +163,20 @@ const dailyWorthReducer = [
         new Date(
           last[2].getFullYear(),
           last[2].getMonth(),
-          last[2].getDate() + dateDiff - ix)])
+          last[2].getDate() + ix + 1)])
 
+    const fillerLast = filler[filler.length - 1]
     if (trx.table === "income") {
-      filler[0][0] += trx.amount;
-      filler[0][1] += trx.amount;
+      fillerLast[0] += trx.amount;
+      fillerLast[1] += trx.amount;
     } else if (trx.table === "expense") {
-      filler[0][0] -= trx.amount;
-      filler[0][1] -= trx.amount;
+      fillerLast[0] -= trx.amount;
+      fillerLast[1] -= trx.amount;
     } else if (trx.table === "obligation") {
-      filler[0][1] += trx.amount;
+      fillerLast[1] += trx.amount;
     }
 
-    return [
-      ...filler,
-      ...cumm
-    ]
+    return [...cumm, ...filler]
   },
   [[0, 0, new Date(2022, 0, 1)]]
 ]
