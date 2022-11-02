@@ -74,7 +74,7 @@ const trxReducer = () => [
 ]
 
 function trxMake(list, year, table, name, dateInput, amount) {
-  const id = list.reduce((a, b) => Math.max(a, b.id), 0);
+  const id = list.reduce((a, b) => Math.max(a, b.id), 0) + 1;
 
   let date = dateInput ? new Date(dateInput) : new Date();
   if (date.toString() === "Invalid Date") {
@@ -182,6 +182,11 @@ const dailyWorthReducer = [
   },
   [[0, 0, new Date(2022, 0, 1)]]
 ]
+
+function netWorth(state) {
+  const [a, b, c] = state.totalsTrx
+  return a - b + c
+}
 
 function reducer(state, { type, ...values }) {
   switch (type) {
@@ -308,6 +313,7 @@ const Cussy = {
   tableIx,
   displayDate,
   getDailyWorth,
+  netWorth,
 }
 
 export default Cussy;

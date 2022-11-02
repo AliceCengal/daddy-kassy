@@ -430,8 +430,15 @@ const SheetStyle = {
     class: "row row-cols-3 g-3",
     style: { maxWidth: '80rem', margin: 'auto' }
   },
+  sheetPanel: {
+    class: "row row-cols-3 g-3",
+    style: {
+      maxWidth: "80rem", minWidth: "60rem",
+      overflowX: "auto", margin: "auto"
+    }
+  },
   titleBox: { class: "d-flex justify-content-between align-items-center p-0" },
-  title: { class: "w3-text-theme d-inline-block m-3" },
+  title: { class: "w3-text-theme d-inline-block m-3 overflow-hidden" },
   worthBox: {
     class: "d-flex flex-row justify-content-between align-items-center p-3"
   },
@@ -458,7 +465,7 @@ function SpreadsheetPage() {
 
   const TitleBox =
     h(Card, SheetStyle.titleBox,
-      h("h4", SheetStyle.title, `${state.name} ${state.year}`),
+      h("h4", SheetStyle.title, `${state.name}\xA0${state.year}`),
       h("div", null,
         h("div", null, "gadgets"),
         h("div", SheetStyle.gadgetMenu,
@@ -495,21 +502,19 @@ function SpreadsheetPage() {
       h("div", SheetStyle.submain,
         h("div", { class: "col-12 col-md-4" }, TitleBox),
         h("div", { class: "col-6 col-md-4" }, GrossWorthBox),
-        h("div", { class: "col-6 col-md-4" }, NetWorthBox),
+        h("div", { class: "col-6 col-md-4" }, NetWorthBox)),
+
+      h("div", SheetStyle.sheetPanel,
 
         openGadget == "timeline" ?
           h("div", { class: "col-12" },
             h(Timeline)) :
           openGadget == "proportion" ?
             Pizza().map(pp =>
-              h("div", { class: "col-4" },
-                pp)) :
-            null,
-
-        h("div", { class: "btn-group d-md-none col-12" },
-          h("button", { class: "btn btn-secondary" }, "INCOME"),
-          h("button", { class: "btn btn-secondary" }, "EXPENSE"),
-          h("button", { class: "btn btn-secondary" }, "OBLIGATION")),
+              h("div", { class: "col-4" }, pp)) :
+            openGadget == "template" ?
+              Template().map(tt =>
+                h("div", { class: "col-4" }, tt)) : null,
 
         h("div", { class: "col-lg-4 col-xs-12" },
           h(TableTop, { table: "income" })),
@@ -565,22 +570,39 @@ const transduce = () => [
   }, [[], [], []]
 ]
 
+const Q1 = (date) => date.getMonth() > -1 && date.getMonth() < 3
+const Q2 = (date) => date.getMonth() > 2 && date.getMonth() < 6
+const Q3 = (date) => date.getMonth() > 5 && date.getMonth() < 9
+const Q4 = (date) => date.getMonth() > 8 && date.getMonth() < 12
+
 function Timeline() {
   const { state, dispatch } = React.useContext(AppCtx);
+  const [mode, setMode] = React.useState("year")
   const canvasRef = React.useRef(null);
 
-  React.useEffect(() => {
+  const data = React.useMemo(() => {
+    const [grossworths, networths, dates] = (
+      mode == "q1" ?
+        Cussy.getDailyWorth(state.transactions, state.year)
+          .filter(a => Q1(a[2])) :
+        mode == "q2" ?
+          Cussy.getDailyWorth(state.transactions, state.year)
+            .filter(a => Q2(a[2])) :
+          mode == "q3" ?
+            Cussy.getDailyWorth(state.transactions, state.year)
+              .filter(a => Q3(a[2])) :
+            mode == "q4" ?
+              Cussy.getDailyWorth(state.transactions, state.year)
+                .filter(a => Q4(a[2])) :
+              Cussy.getDailyWorth(state.transactions, state.year)
+                .reduce(threeDaySmoother, [])
+                .reverse()
+    ).reduce(...transduce())
 
-    const [grossworths, networths, dates] =
-      Cussy.getDailyWorth(state.transactions, state.year)
-        .reduce(threeDaySmoother, [])
-        .reverse()
-        .reduce(...transduce())
-
-    const data = {
-      labels: dates.map(d => d.toLocaleDateString()),
-      datasets: [
-        {
+    return (
+      {
+        labels: dates.map(d => d.toLocaleDateString()),
+        datasets: [{
           label: "Gross",
           data: grossworths,
           fill: false,
@@ -588,8 +610,7 @@ function Timeline() {
           backgroundColor: dates.map((z, ix) =>
             `hsl(${(360 + 180 - ix * 360 / dates.length) % 360}, 100%, 50%)`
           )
-        },
-        {
+        }, {
           label: "Net",
           data: networths,
           fill: false,
@@ -597,9 +618,16 @@ function Timeline() {
           backgroundColor: dates.map((z, ix) =>
             `hsl(${(360 + 180 - ix * 360 / dates.length) % 360}, 100%, 50%)`
           )
-        }
-      ]
-    }
+        }]
+      }
+    )
+  }, [
+    state.transactions.length,
+    Cussy.netWorth(state),
+    mode
+  ])
+
+  React.useEffect(() => {
 
     const chartRef = new Chart(
       canvasRef.current,
@@ -613,17 +641,52 @@ function Timeline() {
     return () => {
       chartRef.destroy()
     }
-  }, [])
+  }, [
+    state.transactions.length,
+    Cussy.netWorth(state),
+    mode
+  ])
 
   return (
-    h("div", null,
-      h("div", null,
-        h("button", null, "year"),
-        h("button", null, "q1"),
-        h("button", null, "q2"),
-        h("button", null, "q3"),
-        h("button", null, "q4")),
+    h("div", { class: "d-flex flex-column align-items-center" },
+      h(TimelineSelector, { mode: mode, setMode: setMode }),
       h("div", null, h("canvas", { ref: canvasRef }))));
+}
+
+function TimelineSelector({ mode, setMode }) {
+
+  function handleSet(e) {
+    setMode(e.target.innerText)
+  }
+
+  return (
+    h("div", { class: "btn-group" },
+      h("button", {
+        class: "btn btn-secondary",
+        disabled: mode == "year",
+        onClick: handleSet
+      }, "year"),
+      h("button", {
+        class: "btn btn-secondary",
+        disabled: mode == "q1",
+        onClick: handleSet
+      }, "q1"),
+      h("button", {
+        class: "btn btn-secondary",
+        disabled: mode == "q2",
+        onClick: handleSet
+      }, "q2"),
+      h("button", {
+        class: "btn btn-secondary",
+        disabled: mode == "q3",
+        onClick: handleSet
+      }, "q3"),
+      h("button", {
+        class: "btn btn-secondary",
+        disabled: mode == "q4",
+        onClick: handleSet
+      }, "q4"))
+  )
 }
 
 const proportionReducer = () => [
@@ -676,13 +739,12 @@ function Pizza() {
     React.useRef(null), React.useRef(null), React.useRef(null)
   ]
 
-  React.useEffect(() => {
-
+  const data = React.useMemo(() => {
     const pizzas = state.transactions.reduce(
       ...proportionReducer()
     )
 
-    const data = pizzas.map((p, pix) => {
+    return pizzas.map((p, pix) => {
       const p2 = Array.from(p)
         .sort((a, b) => b[1] - a[1])
         .filter(a => a[1] > 1 || a[1] < -1);
@@ -694,7 +756,7 @@ function Pizza() {
           {
             data: p2.map(a => a[1]),
             backgroundColor: p2.map((z, ix) =>
-              `hsl(${pix * 120}, ${100 * Math.abs(
+              `hsl(${(pix * 240 + 120) % 360}, ${100 * Math.abs(
                 (z[1] - p2[p2.length - 1][1]) / magn
               )}%, 50%)`
             )
@@ -702,7 +764,14 @@ function Pizza() {
         ]
       }
     })
-    console.log(data)
+
+  }, [
+    state.transactions.length,
+    Cussy.netWorth(state),
+  ])
+
+  React.useEffect(() => {
+
     const chartRefs = data.map((d, ix) =>
       new Chart(
         canvasRefs[ix].current,
@@ -716,7 +785,10 @@ function Pizza() {
     return () => {
       chartRefs.forEach(ref => ref.destroy())
     }
-  }, [])
+  }, [
+    state.transactions.length,
+    Cussy.netWorth(state),
+  ])
 
   return [
     h("div", null,
@@ -728,75 +800,75 @@ function Pizza() {
   ];
 }
 
-function Template(props) {
-  return (
-    h("div", { class: "d-grid" },
-      h("div", { id: "averaged-flow" },
-        h("p", null,
-          h("span", null, "Average income"),
-          h("span", null, ":"),
-          h("span", null)),
-        h("p", null,
-          h("span", null, "Average expense"),
-          h("span", null, ":"),
-          h("span", null))),
-      h("table", { class: "sheet-table", id: "sheet-monthly-table" },
-        h("thead", null,
-          h("tr", { class: "topline" },
-            h("td", { colspan: "2" }, "MONTHLY EXPENSE")),
-          h("tr", { class: "bottomline" },
-            h("td", null, "Detail"),
-            h("td", null, "Amount")),
-          h("tr", null,
-            h("td", null, "TOTAL"),
-            h("td", { class: "text-code", id: "sheet-monthly-total" }, "0.00")),
-          h("tr", null,
-            h("td", null,
-              h("input", { type: "text", id: "sheet-monthly-new-detail" })),
-            h("td", null,
-              h("input", {
-                type: "text",
-                id: "sheet-monthly-new-amount",
-                size: "2"
-              })))),
-        h("tbody", null)),
-      h("table", { class: "sheet-table", id: "sheet-yearly-table" },
-        h("thead", null, h("tr", { class: "topline" },
-          h("td", { colspan: "2" }, "YEARLY EXPENSE")),
-          h("tr", { class: "bottomline" },
-            h("td", null, "Detail"),
-            h("td", null, "Amount")),
-          h("tr", null,
-            h("td", null, "TOTAL"),
-            h("td", { class: "text-code", id: "sheet-yearly-total" }, "0.00")),
-          h("tr", null,
-            h("td", null,
-              h("input", {
-                type: "text",
-                id: "sheet-yearly-new-detail"
-              })),
-            h("td", null,
-              h("input", {
-                type: "text",
-                id: "sheet-yearly-new-amount",
-                size: "2"
-              })))),
-        h("tbody", null)),
-      h("div", null),
-      h("div", { id: "sheet-monthly-add" },
-        h("button", null, "Copy to below"),
-        h("input", {
-          type: "text",
-          placeholder: "month",
-          size: "2"
-        })),
-      h("div", { id: "sheet-yearly-add" },
-        h("button", null, "Copy to below"),
-        h("input", {
-          type: "text",
-          placeholder: "month",
-          size: "2"
-        }))));
+function Template() {
+  return [
+    h("div", { id: "averaged-flow" },
+      h("p", null,
+        h("span", null, "Average income"),
+        h("span", null, ":"),
+        h("span", null)),
+      h("p", null,
+        h("span", null, "Average expense"),
+        h("span", null, ":"),
+        h("span", null))),
+    h("table", { class: "sheet-table", id: "sheet-monthly-table" },
+      h("thead", null,
+        h("tr", { class: "topline" },
+          h("td", { colspan: "2" }, "MONTHLY EXPENSE")),
+        h("tr", { class: "bottomline" },
+          h("td", null, "Detail"),
+          h("td", null, "Amount")),
+        h("tr", null,
+          h("td", null, "TOTAL"),
+          h("td", { class: "text-code", id: "sheet-monthly-total" }, "0.00")),
+        h("tr", null,
+          h("td", null,
+            h("input", { type: "text", id: "sheet-monthly-new-detail" })),
+          h("td", null,
+            h("input", {
+              type: "text",
+              id: "sheet-monthly-new-amount",
+              size: "2"
+            })))),
+      h("tbody", null)),
+    h("table", { class: "sheet-table", id: "sheet-yearly-table" },
+      h("thead", null, h("tr", { class: "topline" },
+        h("td", { colspan: "2" }, "YEARLY EXPENSE")),
+        h("tr", { class: "bottomline" },
+          h("td", null, "Detail"),
+          h("td", null, "Amount")),
+        h("tr", null,
+          h("td", null, "TOTAL"),
+          h("td", { class: "text-code", id: "sheet-yearly-total" }, "0.00")),
+        h("tr", null,
+          h("td", null,
+            h("input", {
+              type: "text",
+              id: "sheet-yearly-new-detail"
+            })),
+          h("td", null,
+            h("input", {
+              type: "text",
+              id: "sheet-yearly-new-amount",
+              size: "2"
+            })))),
+      h("tbody", null)),
+    h("div", null),
+    h("div", { id: "sheet-monthly-add" },
+      h("button", null, "Copy to below"),
+      h("input", {
+        type: "text",
+        placeholder: "month",
+        size: "2"
+      })),
+    h("div", { id: "sheet-yearly-add" },
+      h("button", null, "Copy to below"),
+      h("input", {
+        type: "text",
+        placeholder: "month",
+        size: "2"
+      }))
+  ]
 }
 
 function TableTop({ table }) {
@@ -868,10 +940,11 @@ function TrxRow({ trx }) {
       dispatch({
         type: 'addTrx',
         table: trx.table,
-        name: nameRef.current.innerText,
+        name: nameRef.current.innerText.slice(0, -6).trim(),
         dateInput: dateRef.current.innerText,
         amount: Number(amountRef.current.innerText || 0.0)
       });
+
       setEditing(false)
     }
   }
