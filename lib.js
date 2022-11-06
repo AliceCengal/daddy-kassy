@@ -286,12 +286,12 @@ function reducer(state, { type, ...values }) {
       };
     }
     case 'removeTemplate': {
-      const updated = state.transactions.filter(trx => trx.name !== values.name);
+      const updated = state.template.filter(trx => trx.name !== values.name);
       const meta = updated.reduce(...trxReducer());
       return {
         ...state,
-        transactions: updated,
-        totalsTrx: meta
+        template: updated,
+        totalsTemplate: meta
       };
     }
     case 'clearAlert':

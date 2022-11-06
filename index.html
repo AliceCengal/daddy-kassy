@@ -69,12 +69,12 @@
     .float-menu {
       position: absolute;
       visibility: hidden;
-      top: 90%;
+      top: -50%;
       right: 0;
+      z-index: 10;
     }
 
     .float-menu:hover, *:hover + .float-menu { visibility: visible; }
-    *:has(+ .float-menu) { padding: 1rem; }
     *:has(> .float-menu) { position: relative; }
 
     .sheet-table {
@@ -83,8 +83,18 @@
       margin-bottom: auto;
     }
 
-    .carrot *:nth-child(3n-1) { text-align: right; }
-    .sheet-table:not(.carrot) *:nth-child(3n) { text-align: right; }
+    .sheet-table-2 {
+      display: grid;
+      grid-template-columns: 3fr 1fr;
+      margin-bottom: auto;
+    }
+
+    .carrot *:nth-child(3n-1) { text-align: right }
+    .sheet-table:not(.carrot) *:nth-child(3n) { text-align: right }
+    .sheet-table-2 > *:nth-child(2n) { text-align: right }
+    .sheet-table-2 > *:first-child {
+      align-self: center; text-transform: uppercase;
+    }
     .table-total { grid-column: 2 / 4; }
 
     .delete-btn {
@@ -107,6 +117,15 @@
 
     .justify-this > p { text-align: justify; }
     .capitalize { text-transform: uppercase; }
+    .totals-row, .totals-row + * {
+      margin-top: 0.5rem;
+      padding: 0.25rem 0;
+      border-top: 1px grey solid;
+      border-bottom: 1px grey solid;
+    }
+    .totals-row + * + *, .totals-row + * + * + * {
+      margin-top: 0.5rem;
+    }
   </style>
 </head>
 

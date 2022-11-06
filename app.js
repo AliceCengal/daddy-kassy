@@ -11,6 +11,9 @@ const React = {
 const TODAY = new Date();
 const ENTER_KEY = 13;
 const FILE_PREFIX = "account-"
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
 
 const dateFmt = TODAY.toLocaleDateString()
   .split(/[-./]/g)
@@ -437,8 +440,8 @@ const SheetStyle = {
       overflowX: "auto", margin: "auto"
     }
   },
-  titleBox: { class: "d-flex justify-content-between align-items-center p-0" },
-  title: { class: "w3-text-theme d-inline-block m-3 overflow-hidden" },
+  titleBox: { class: "d-flex justify-content-between align-items-center p-3" },
+  title: { class: "w3-text-theme d-inline-block m-0 overflow-hidden" },
   worthBox: {
     class: "d-flex flex-row justify-content-between align-items-center p-3"
   },
@@ -460,7 +463,8 @@ function SpreadsheetPage() {
   const [openGadget, setOpenGadget] = React.useState('');
 
   function handleGadget(e) {
-    setOpenGadget(e.currentTarget.innerText)
+    const t = e.currentTarget.innerText
+    setOpenGadget(g => g == t ? "" : t)
   }
 
   const TitleBox =
@@ -510,17 +514,15 @@ function SpreadsheetPage() {
           h("div", { class: "col-12" },
             h(Timeline)) :
           openGadget == "proportion" ?
-            Pizza().map(pp =>
-              h("div", { class: "col-4" }, pp)) :
+            h(Pizza) :
             openGadget == "template" ?
-              Template().map(tt =>
-                h("div", { class: "col-4" }, tt)) : null,
+              h(Template) : null,
 
-        h("div", { class: "col-lg-4 col-xs-12" },
+        h("div", { class: "col" },
           h(TableTop, { table: "income" })),
-        h("div", { class: "col-lg-4 col-xs-12" },
+        h("div", { class: "col" },
           h(TableTop, { table: "expense" })),
-        h("div", { class: "col-lg-4 col-xs-12" },
+        h("div", { class: "col" },
           h(TableTop, { table: "obligation" })),
 
         [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map(month =>
@@ -628,7 +630,6 @@ function Timeline() {
   ])
 
   React.useEffect(() => {
-
     const chartRef = new Chart(
       canvasRef.current,
       {
@@ -771,7 +772,6 @@ function Pizza() {
   ])
 
   React.useEffect(() => {
-
     const chartRefs = data.map((d, ix) =>
       new Chart(
         canvasRefs[ix].current,
@@ -791,83 +791,113 @@ function Pizza() {
   ])
 
   return [
-    h("div", null,
-      h("canvas", { ref: canvasRefs[0] })),
-    h("div", null,
-      h("canvas", { ref: canvasRefs[1] })),
-    h("div", null,
-      h("canvas", { ref: canvasRefs[2] }))
-  ];
+    h("div", { class: "col" },
+      h("div", null,
+        h("canvas", { ref: canvasRefs[0] }))),
+    h("div", { class: "col" },
+      h("div", null,
+        h("canvas", { ref: canvasRefs[1] }))),
+    h("div", { class: "col" },
+      h("div", null,
+        h("canvas", { ref: canvasRefs[2] }))),
+  ]
 }
 
 function Template() {
   return [
-    h("div", { id: "averaged-flow" },
-      h("p", null,
-        h("span", null, "Average income"),
-        h("span", null, ":"),
-        h("span", null)),
-      h("p", null,
-        h("span", null, "Average expense"),
-        h("span", null, ":"),
-        h("span", null))),
-    h("table", { class: "sheet-table", id: "sheet-monthly-table" },
-      h("thead", null,
-        h("tr", { class: "topline" },
-          h("td", { colspan: "2" }, "MONTHLY EXPENSE")),
-        h("tr", { class: "bottomline" },
-          h("td", null, "Detail"),
-          h("td", null, "Amount")),
-        h("tr", null,
-          h("td", null, "TOTAL"),
-          h("td", { class: "text-code", id: "sheet-monthly-total" }, "0.00")),
-        h("tr", null,
-          h("td", null,
-            h("input", { type: "text", id: "sheet-monthly-new-detail" })),
-          h("td", null,
-            h("input", {
-              type: "text",
-              id: "sheet-monthly-new-amount",
-              size: "2"
-            })))),
-      h("tbody", null)),
-    h("table", { class: "sheet-table", id: "sheet-yearly-table" },
-      h("thead", null, h("tr", { class: "topline" },
-        h("td", { colspan: "2" }, "YEARLY EXPENSE")),
-        h("tr", { class: "bottomline" },
-          h("td", null, "Detail"),
-          h("td", null, "Amount")),
-        h("tr", null,
-          h("td", null, "TOTAL"),
-          h("td", { class: "text-code", id: "sheet-yearly-total" }, "0.00")),
-        h("tr", null,
-          h("td", null,
-            h("input", {
-              type: "text",
-              id: "sheet-yearly-new-detail"
-            })),
-          h("td", null,
-            h("input", {
-              type: "text",
-              id: "sheet-yearly-new-amount",
-              size: "2"
-            })))),
-      h("tbody", null)),
-    h("div", null),
-    h("div", { id: "sheet-monthly-add" },
-      h("button", null, "Copy to below"),
-      h("input", {
-        type: "text",
-        placeholder: "month",
-        size: "2"
-      })),
-    h("div", { id: "sheet-yearly-add" },
-      h("button", null, "Copy to below"),
-      h("input", {
-        type: "text",
-        placeholder: "month",
-        size: "2"
+    h("div", { class: "col" },
+      h(TemplateTable, { table: "income" })),
+    h("div", { class: "col" },
+      h(TemplateTable, { table: "expense" })),
+    h("div", { class: "col" },
+      h(TemplateTable, { table: "obligation" }))
+  ]
+}
+
+const headings = ["monthly income", "monthly expense", "yearly expense"]
+
+function TemplateTable({ table }) {
+  const { state, dispatch } = React.useContext(AppCtx);
+  const nameRef = React.useRef(null);
+  const amountRef = React.useRef(null);
+  const index = Cussy.tableIx(table);
+
+  const entries = React.useMemo(() => (
+    state.template.filter(t => t.table === table)
+  ), [state.totalsTemplate[index], state.template.length])
+
+  function handleEdit({ table, name, amount }) {
+    dispatch({
+      type: "removeTemplate",
+      name: name
+    })
+    nameRef.current.innerText = name;
+    amountRef.current.innerText = amount;
+  }
+
+  function addEntry(e) {
+    if (e.which === ENTER_KEY) {
+      e.preventDefault()
+      dispatch({
+        type: "addTemplate",
+        table: table,
+        name: nameRef.current.innerText,
+        amount: Number(amountRef.current.innerText)
+      })
+      nameRef.current.innerHtml = "";
+      amountRef.current.innerText = "";
+    }
+  }
+
+  function moveEntries(e) {
+    const m = MONTHS.findIndex(a => a == e.target.innerText)
+    dispatch({
+      type: "addManyTrx",
+      many: entries.map(e => ({
+        ...e,
+        dateInput: new Date(state.year, m, 1),
+        amount: (index == 2 ? e.amount / 12 : e.amount)
       }))
+    })
+  }
+
+  return (
+    h(Card, { class: "sheet-table-2 p-2" },
+      h("span", null, headings[index]),
+      h("div", null,
+        h("div", {
+          class: "btn btn-outline-success text-nowrap"
+        }, "Add to >"),
+        h("div", SheetStyle.gadgetMenu,
+          Array(12).fill(1).map((i, ix) => (
+            h("button", {
+              onClick: moveEntries,
+              ...SheetStyle.gadgetButton
+            }, MONTHS[ix])
+          )))),
+
+      h("span", null, "Detail"),
+      h("span", null, "Amount"),
+
+      h("div", { ref: nameRef, onKeyDown: addEntry, ...SheetStyle.fakeInput }),
+      h("div", { ref: amountRef, onKeyDown: addEntry, ...SheetStyle.fakeInput }),
+
+      h("span", { class: "totals-row" }, "TOTAL"),
+      h("span", { class: "text-code" }, state.totalsTemplate[index].toFixed(2)),
+
+      entries.flatMap(trx => h(TemplateRow, { template: trx, toEdit: handleEdit })))
+  )
+}
+
+function TemplateRow({ template, toEdit }) {
+
+  function handleEdit() {
+    toEdit(template)
+  }
+
+  return [
+    h("span", { ondblclick: handleEdit }, template.name),
+    h("span", { class: "text-code", ondblclick: handleEdit }, template.amount.toFixed(2))
   ]
 }
 
@@ -991,10 +1021,6 @@ function TrxRow({ trx }) {
     }, trx.amount.toFixed(2))
   ]
 }
-
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"];
 
 // helper function
 function swapColorTheme(colorTheme) {
