@@ -1,7 +1,7 @@
 Easy Account
 ============
 
-Personal accounting app
+Personal accounting app: https://alicecengal.github.io/daddy-kassy/
 
 Standalone app using ~~React 17, Babel 6,~~ Preact, ChartJS and Bootstrap 5, all loaded from CDN. No build step required, just `npx serve`.
 
