@@ -45,8 +45,6 @@ function Main({ page }) {
   const helpPage = React.useRef(document.getElementById("help-page"))
 
   const [state, dispatch] = React.useReducer(Cussy.reducer, null, Cussy.init);
-  console.log(state);
-  //console.log(Cussy.getDailyWorth(state.transactions, state.year))
 
   React.useEffect(() => {
     if (state.alertMessage) {
