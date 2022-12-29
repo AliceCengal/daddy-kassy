@@ -447,13 +447,10 @@ const SheetStyle = {
     class: "float-menu d-flex flex-column align-items-stretch"
   },
   gadgetButton: { class: "btn btn-secondary" },
-  fakeInput: {
-    class: "form-control",
-    contenteditable: true,
-  },
   trxDeleteBtn: {
     class: "btn btn-danger delete-btn"
-  }
+  },
+  nameField: { class: "w-100" },
 }
 
 function SpreadsheetPage() {
@@ -911,9 +908,9 @@ function TableTop({ table }) {
       dispatch({
         type: 'addTrx',
         table,
-        name: nameRef.current.innerText,
-        dateInput: dateRef.current.innerText,
-        amount: Number(amountRef.current.innerText || 0.0)
+        name: nameRef.current.value,
+        dateInput: dateRef.current.value,
+        amount: Number(amountRef.current.value || 0.0)
       });
     }
   }
@@ -928,9 +925,9 @@ function TableTop({ table }) {
       h("span", { class: "text-center" }, "Detail"),
       h("span", null, "Amount"),
 
-      h("div", { ref: dateRef, onKeyDown: addTrx, ...SheetStyle.fakeInput }),
-      h("div", { ref: nameRef, onKeyDown: addTrx, ...SheetStyle.fakeInput }),
-      h("div", { ref: amountRef, onKeyDown: addTrx, ...SheetStyle.fakeInput })));
+      h("input", { ref: dateRef, onKeyDown: addTrx, size: 1 }),
+      h("input", { ref: nameRef, onKeyDown: addTrx, size: 1 }),
+      h("input", { ref: amountRef, onKeyDown: addTrx, size: 1 })));
 }
 
 const MonthTableStyle = { class: "sheet-table shadow-sm bg-white p-2" }
@@ -968,9 +965,9 @@ function TrxRow({ trx }) {
       dispatch({
         type: 'addTrx',
         table: trx.table,
-        name: nameRef.current.innerText.slice(0, -6).trim(),
-        dateInput: dateRef.current.innerText,
-        amount: Number(amountRef.current.innerText || 0.0)
+        name: nameRef.current.value,
+        dateInput: dateRef.current.value,
+        amount: Number(amountRef.current.value || 0.0)
       });
 
       setEditing(false)
@@ -990,25 +987,30 @@ function TrxRow({ trx }) {
   }
 
   if (editing) return [
-    h("div", {
-      ...SheetStyle.fakeInput,
+    h("input", {
       ref: dateRef,
-      onKeyDown: submitTrx
-    }, Cussy.displayDate(trx)),
-    h("div", {
-      ...SheetStyle.fakeInput,
-      ref: nameRef,
-      onKeyDown: submitTrx
-    }, trx.name,
+      onKeyDown: submitTrx,
+      defaultValue: Cussy.displayDate(trx),
+      size: 1,
+    }),
+    h("div", null,
+      h("input", {
+        ref: nameRef,
+        onKeyDown: submitTrx,
+        defaultValue: trx.name,
+        size: 0,
+        ...SheetStyle.nameField,
+      }),
       h("button", {
         ...SheetStyle.trxDeleteBtn,
         onClick: deleteTrx
       }, "DELETE")),
-    h("div", {
-      ...SheetStyle.fakeInput,
+    h("input", {
       ref: amountRef,
-      onKeyDown: submitTrx
-    }, trx.amount.toFixed(2))
+      onKeyDown: submitTrx,
+      defaultValue: trx.amount.toFixed(2),
+      size: 1,
+    })
 
   ]; else return [
     h("span", { ondblclick: startEdit }, Cussy.displayDate(trx)),
