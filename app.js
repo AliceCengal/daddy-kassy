@@ -39,11 +39,17 @@ export default function App() {
 }
 
 const AppCtx = React.createContext(null);
+const AppCtx_D = React.createContext(null);
 
-function Main({ page }) {
-  const aboutPage = React.useRef(document.getElementById("about-page"))
-  const helpPage = React.useRef(document.getElementById("help-page"))
+function useAppState() {
+  return React.useContext(AppCtx)
+}
 
+function useDispatch() {
+  return React.useContext(AppCtx_D)
+}
+
+function Wrapper({ children }) {
   const [state, dispatch] = React.useReducer(Cussy.reducer, null, Cussy.init);
 
   React.useEffect(() => {
@@ -57,8 +63,19 @@ function Main({ page }) {
     swapColorTheme(state.colorTheme);
   }, [state.colorTheme]);
 
+
   return (
-    h(AppCtx.Provider, { value: { state, dispatch } },
+    h(AppCtx.Provider, { value: state },
+      h(AppCtx_D.Provider, { value: dispatch }, children))
+  )
+}
+
+function Main({ page }) {
+  const aboutPage = React.useRef(document.getElementById("about-page"))
+  const helpPage = React.useRef(document.getElementById("help-page"))
+
+  return (
+    h(Wrapper, null,
       page === 'about' ? h(Static, { page: aboutPage }) : null,
       page === 'help' ? h(Static, { page: helpPage }) : null,
       page === 'load' ? h(LoadPage) : null,
@@ -98,7 +115,7 @@ const loadStyle = {
 }
 
 function LoadPage() {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const dispatch = useDispatch()
   const [tempAccount, setTempAccount] = React.useState(null);
   const [lcState, setLcState] = React.useState(localStorage.length)
 
@@ -215,7 +232,7 @@ function LoadPage() {
 }
 
 function DownloadPage() {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const state = useAppState();
   const [danger, setDanger] = React.useState(
     localStorage.getItem('danger') || ''
   );
@@ -278,7 +295,8 @@ const THEME_COLORS = [
 ]
 
 function NewPage() {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const state = useAppState()
+  const dispatch = useDispatch()
 
   function submit(e) {
     e.preventDefault();
@@ -454,7 +472,7 @@ const SheetStyle = {
 }
 
 function SpreadsheetPage() {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const state = useAppState();
   const [openGadget, setOpenGadget] = React.useState('');
 
   function handleGadget(e) {
@@ -573,7 +591,7 @@ const Q3 = (date) => date.getMonth() > 5 && date.getMonth() < 9
 const Q4 = (date) => date.getMonth() > 8 && date.getMonth() < 12
 
 function Timeline() {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const state = useAppState();
   const [mode, setMode] = React.useState("year")
   const canvasRef = React.useRef(null);
 
@@ -730,7 +748,7 @@ const proportionOption = {
 }
 
 function Pizza() {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const state = useAppState();
   const canvasRefs = [
     React.useRef(null), React.useRef(null), React.useRef(null)
   ]
@@ -812,7 +830,8 @@ function Template() {
 const headings = ["monthly income", "monthly expense", "yearly expense"]
 
 function TemplateTable({ table }) {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const state = useAppState();
+  const dispatch = useDispatch();
   const nameRef = React.useRef(null);
   const amountRef = React.useRef(null);
   const index = Cussy.tableIx(table);
@@ -897,7 +916,8 @@ function TemplateRow({ template, toEdit }) {
 }
 
 function TableTop({ table }) {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const state = useAppState();
+  const dispatch = useDispatch();
   const dateRef = React.useRef(null);
   const nameRef = React.useRef(null);
   const amountRef = React.useRef(null);
@@ -933,7 +953,7 @@ function TableTop({ table }) {
 const MonthTableStyle = { class: "sheet-table shadow-sm bg-white p-2" }
 
 function MonthTable({ month }) {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const state = useAppState()
   const trxs = Cussy.getForMonth(state.transactions, month);
 
   if (trxs[0].length == 0 && trxs[1].length == 0 && trxs[2].length == 0)
@@ -949,7 +969,7 @@ function MonthTable({ month }) {
 }
 
 function TrxRow({ trx }) {
-  const { state, dispatch } = React.useContext(AppCtx);
+  const dispatch = useDispatch()
   const [editing, setEditing] = React.useState(false);
   const dateRef = React.useRef(null);
   const nameRef = React.useRef(null);
