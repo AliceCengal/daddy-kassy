@@ -845,8 +845,8 @@ function TemplateTable({ table }) {
       type: "removeTemplate",
       name: name
     })
-    nameRef.current.innerText = name;
-    amountRef.current.innerText = amount;
+    nameRef.current.value = name;
+    amountRef.current.value = amount;
   }
 
   function addEntry(e) {
@@ -855,11 +855,11 @@ function TemplateTable({ table }) {
       dispatch({
         type: "addTemplate",
         table: table,
-        name: nameRef.current.innerText,
-        amount: Number(amountRef.current.innerText)
+        name: nameRef.current.value,
+        amount: Number(amountRef.current.value)
       })
-      nameRef.current.innerHtml = "";
-      amountRef.current.innerText = "";
+      nameRef.current.value = "";
+      amountRef.current.value = "";
     }
   }
 
@@ -893,8 +893,8 @@ function TemplateTable({ table }) {
       h("span", null, "Detail"),
       h("span", null, "Amount"),
 
-      h("div", { ref: nameRef, onKeyDown: addEntry, ...SheetStyle.fakeInput }),
-      h("div", { ref: amountRef, onKeyDown: addEntry, ...SheetStyle.fakeInput }),
+      h("input", { ref: nameRef, onKeyDown: addEntry, size: 1 }),
+      h("input", { ref: amountRef, onKeyDown: addEntry, size: 1 }),
 
       h("span", { class: "totals-row" }, "TOTAL"),
       h("span", { class: "text-code" }, state.totalsTemplate[index].toFixed(2)),
@@ -947,7 +947,8 @@ function TableTop({ table }) {
 
       h("input", { ref: dateRef, onKeyDown: addTrx, size: 1 }),
       h("input", { ref: nameRef, onKeyDown: addTrx, size: 1 }),
-      h("input", { ref: amountRef, onKeyDown: addTrx, size: 1 })));
+      h("input", { ref: amountRef, onKeyDown: addTrx, size: 1 }))
+  );
 }
 
 const MonthTableStyle = { class: "sheet-table shadow-sm bg-white p-2" }
