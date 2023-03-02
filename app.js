@@ -249,6 +249,7 @@ function DownloadPage() {
     localStorage.setItem(
       `${FILE_PREFIX}${state.name}-${state.year}`,
       JSON.stringify(state));
+    alert("Saved records to browser storage")
   }
 
   return (
